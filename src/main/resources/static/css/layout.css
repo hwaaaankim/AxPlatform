@@ -1,0 +1,70 @@
+/* Shared content alignment: every section fills its parent column. */
+.app-frame+main,.app-frame+main.narrow{width:auto;max-width:none}
+main.container :is(.panel,.card,.subpanel,.stage-panel,.notice,.empty-state,.help-line,.ai-request-form,.ai-result,.ai-source-list,.ai-diagnostic,.analysis-result){width:100%;max-width:none;min-width:0}
+main.container form{width:100%;min-width:0}
+main.container :is(.panel,.subpanel,.card)>:is(form,fieldset,details,.table-scroll,.actions){max-width:100%;min-width:0}
+main :is(p,small,.notice,.help-line,.field-help){overflow-wrap:anywhere}
+main fieldset{min-inline-size:0;margin-inline:0}
+.ai-request-form,.ai-result{width:100%;max-width:none}
+.ai-request-form{display:grid;gap:12px}
+.ai-request-form>label{margin-bottom:0}
+.ai-request-form>.guide-choices{width:100%;margin:0}
+.ai-request-form>.ai-source-list{width:100%;margin:0;padding:14px 16px}
+.ai-request-form>.check{align-items:flex-start}
+.ai-request-form>.check input{margin-top:3px}
+.ai-request-form>button[type=submit]{justify-self:start}
+.ai-result>.notice:last-child{margin-bottom:0}
+.ai-diagnostic{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:#fafafe}
+.ai-diagnostic summary{font-size:13px}
+.ai-diagnostic>p{font-size:12px;margin:12px 0 0}
+.diagnostic-grid{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 16px;margin:14px 0 0;font-size:12px}
+.diagnostic-grid dt{color:var(--muted)}
+.diagnostic-grid dd{margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.sheet-properties>div{width:100%;max-width:none;align-items:start}
+.sheet-properties .field-span-full{grid-column:1/-1;width:100%}
+.sheet-properties .field{display:grid;gap:6px;min-width:0}
+.sheet-properties .field>label{margin:0}
+.sheet-properties .field-help{display:block;line-height:1.6}
+.sheet-properties .field>.actions,.sheet-properties>div>.actions{margin-top:0}
+.sheet-properties .sheet-selection{margin:0}
+.sheet-properties input[readonly]{background:#f2f2f8;color:#64687b}
+.dashboard-hero p{max-width:none}
+.list-tools{width:100%}
+.list-tools input,.list-tools select{max-width:none}
+.scope-bar select{max-width:none;flex:1 1 200px}
+.ai-diagnostic-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0}
+#ai-connection-result:empty{display:none}
+#ai-connection-result>.notice{margin-bottom:12px}
+@media(max-width:650px){
+ .diagnostic-grid{grid-template-columns:100px minmax(0,1fr);gap:8px}
+ .ai-request-form>.ai-source-list{padding:12px}
+ .ai-request-form>button[type=submit]{width:100%;justify-self:stretch}
+ .sheet-properties>div>.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+ .sheet-properties>div>.actions>.button:last-child{grid-column:1/-1}
+ .scope-bar select{flex-basis:120px}
+}
+/* Workbook controls share the same full-width content rail as the editor and AI panels. */
+.workbook-bar,.ai-targets,.ai-photo-targets,.ai-batch-results,.import-sheet-list{width:100%;max-width:none;min-width:0}
+.workbook-bar{display:grid;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.workbook-tabs{display:flex;gap:5px;overflow-x:auto;min-width:0;max-width:100%;padding:4px 2px 9px;scrollbar-width:thin;overscroll-behavior-x:contain}
+.workbook-tab{flex:0 0 auto;min-height:38px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 16px;border:1px solid var(--line);border-radius:8px;background:#f6f7fb;color:var(--muted)}
+.workbook-tab:hover{background:#efedfd;color:var(--primary)}
+.workbook-tab[aria-selected=true]{background:#eeebff;border-color:#bcb4f3;color:var(--primary-dark);font-weight:700;box-shadow:inset 0 -2px var(--primary)}
+.workbook-bar .actions{display:flex;flex-wrap:wrap}.workbook-bar .actions>.button{min-height:36px;min-width:92px}
+.workbook-dialog{width:min(660px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;border:1px solid var(--line);border-radius:16px;padding:24px;color:var(--ink);box-shadow:0 24px 100px #15132940}
+.workbook-dialog::backdrop{background:#16152599;backdrop-filter:blur(3px)}
+.workbook-dialog .choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.workbook-dialog .mode-card{display:flex;flex-direction:column;align-items:start;gap:8px;padding:18px;border:1px solid var(--line);border-radius:12px;text-align:left;background:#fff;min-width:0}
+.workbook-dialog .mode-card:hover{border-color:var(--primary);background:#f6f4ff;transform:translateY(-2px)}
+.workbook-dialog .mode-card span{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.workbook-dialog form{display:grid;gap:12px;margin:16px 0}
+.ai-targets{border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px;margin:0 0 14px}
+.ai-targets legend{font-size:13px;font-weight:700;padding:0 6px}.ai-targets select{width:100%}
+.ai-photo-targets{display:grid;gap:8px}.ai-photo-targets .check{align-items:start;padding:8px;background:#f7f7fb;border-radius:8px}
+.ai-batch-results,.import-sheet-list{display:grid;gap:12px;margin:14px 0}
+.ai-photo-result,.import-sheet{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;animation:panel-enter .18s ease-out}
+.ai-photo-result h4{margin:0 0 10px;font-size:15px}.ai-photo-result>.button{margin:8px 8px 0 0}
+.import-sheet .panel-heading{margin-bottom:8px}.import-sheet .notice{margin:8px 0}.notice.error{background:#fff0f2;color:#a52c46;border:1px solid #f1d2da}
+.import-sheet details,.ai-photo-result .table-scroll{margin-top:12px}.ai-photo-result .table-scroll{max-height:360px;overflow:auto}
+@media(max-width:640px){.workbook-dialog{padding:18px}.workbook-dialog .choice-grid{grid-template-columns:1fr}.workbook-bar .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.workbook-bar .actions>.button{width:100%;min-width:0}.ai-photo-result,.import-sheet{padding:12px}}
+@media(prefers-reduced-motion:reduce){.ai-photo-result,.import-sheet{animation:none}.workbook-dialog .mode-card:hover{transform:none}}

@@ -1,0 +1,80 @@
+0.5.0 최신 검증: V005_VALIDATION.txt 및 verification/V005_RESULTS.json.
+아래 내용은 이전 릴리스 당시 검사 기록입니다.
+
+현재 v0.4.0 검증 결과는 V004_VALIDATION.txt가 기준입니다.
+아래는 v0.3.0 당시 기록으로, 이번 실행 결과와 구분합니다.
+
+TEST_REPORT / AxPlatform 0.3.0 / 2026-10-20
+
+0.3.0 최종 코드에 실제 실행한 점검입니다. 모든 기획 기능, 타 서비스 대비 사용성 또는 실운영 준비 완료를 의미하지 않습니다.
+
+PASS — 최종 Maven 빌드와 JUnit
+Java 17.0.20 / Maven 3.9.12 / Spring Boot 4.1.1.
+실제 Maven compile 및 package 성공, Spring Boot 실행형 JAR 생성 성공.
+전체 48 tests, failures 0, errors 0, skipped 0 (8 suites).
+BootstrapIntegrationTest 8 / P1CoreTest 1 / P1IntegrationTest 10 /
+P3SheetIntegrationTest 7 / PasswordRulesTest 2 / SessionLeaseTest 5 /
+P3ResponsesTest 7 / P3SheetRulesTest 8.
+rowIds 필수/정규화 일관성 회귀 추가 후 전체 package(test 포함)를 실행했습니다.
+
+Spring/H2 실제 통합 검사:
+- 초기화/기존 관리자 처리, 공통 업무와 사업·소유자·정책 권한 회귀.
+- 표 저장/재조회, 열·행·셀 권한 분리, 안정된 행 ID, 버전 충돌/되돌리기.
+- AI 선택 적용의 실제 DB 변경, 표 권한 거절 시 초안도 전체 롤백, 중복 적용/취소 처리.
+- 실제 MockMvc로 대시보드·순차 안내 초안의 Thymeleaf 렌더.
+- 세션 종료/다른 계정 및 같은 계정의 session ID 변경 거절.
+Responses 어댑터 검사:
+- HttpClient/HttpResponse는 테스트 모의 객체. 외부 OpenAI 네트워크를 사용하지 않습니다.
+- PNG/TXT 입력, Java 도구 왕복, encrypted reasoning 전달/사용량 집계,
+  임의 범위/도구 거절, 429 자동 재시도 없음, 타임아웃·중단·도구 횟수 제한.
+- AI 표에 rowIds 누락/추가 키 거절, 동일 입력 정규화 결과 유지.
+테스트는 spring.config.location을 classpath 빈 설정으로 격리하고 독립 H2 메모리 DB만 사용합니다. 정리 전 정확한 H2 URL도 확인합니다. 실제 config/application-private.yml이나 사용자의 MariaDB를 읽거나 변경하지 않습니다. Mockito subclass 설정은 src/test에만 있습니다.
+H2 테스트는 MariaDB와 모든 SQL/동시성 동작이 동일함을 의미하지 않습니다.
+상세: docs/verification/P03_MAVEN.json.
+
+PASS — 실제 MariaDB SQL 엔진 검사 9개
+MariaDB 10.11.14 실제 바이너리, 임시 datadir, --bootstrap / --skip-networking.
+전체 생성 후 V003 적용/검증 SQL, 기본 33개 테이블과 utf8mb4_unicode_ci,
+재실행 후 계정·초안·표·AI 이력·등급 배정·관리자 카탈로그 변경·정책 버전 보존,
+요청키 UNIQUE, 사업 범위 복합 FK, 상태 CHECK,
+필수 컬럼 누락 시 V003 마커 미생성/복구 후 생성 검증을 통과했습니다.
+사용자 DB/외부 DB에는 연결하지 않았습니다. 소켓 생성 제한으로 JDBC·HeidiSQL 연결과 장시간 MariaDB 서버 실행은 미검증입니다. SQL 문자열만 검사한 것이 아니라 실제 엔진이 SQL을 처리한 결과입니다.
+상세: docs/verification/P03_MARIADB.json.
+
+PASS — 실제 XLSX 생성 및 독립 파일 해석 51개
+현재 SheetRules와 XlsxWriter를 Java17로 컴파일·실행해 데이터/빈 양식 XLSX 2개를 생성했습니다. openpyxl 3.1.5와 ZIP/XML로 열어 실제 값을 확인했습니다.
+앞자리 0, 수식형 TEXT의 문자 유지, 음수/소수/15자리 숫자,
+DATE, 한글·일어·이모지·공백·XML 이스케이프, 열 너비, 필터·스타일·헤더,
+빈 양식의 데이터 행 제외를 검사했습니다. Excel 데스크톱 GUI 열기는 미검증입니다.
+상세: docs/verification/P03_XLSX.json.
+
+PASS — UI 모듈 검사
+실제 새 JS 모듈 4개 Node 구문 검사 통과.
+표 변환 133 + 표 위젯 18 + 7업무 순차 안내 71 + AI 검토/적용 15 = 237 모의/독립 검사 통과.
+안정된 열·행 ID, 열 이동/추가/삭제, 안내 답 복구/건너뛰기,
+실패·취소 후 재요청, 제안 직접 수정/미리보기, 선택 적용을 점검했습니다.
+DOM/API는 모의 구현입니다. 실제 브라우저 JS 실행·시각·접근성·반응형 검수가 아닙니다.
+상세: docs/verification/P03_UI.json 및 ui-*-result.json.
+
+PASS — SQL/등록/설정과 패키지
+V003·신규 권한·서버 등록·필수 의존·마이그레이션 보호의 정적 검사 195개.
+V001은 원본 유지, V002는 VARCHAR FK 호환을 위한 19개 명시 COLLATE만 보정.
+프로젝트/개인 예제 YAML 중복 키 없음, 로컬 AxPlatform URL, 고급 모델 기본값,
+jar-plugin 3.4.2 속성과 직접 플러그인 버전, Boot4 오류 설정을 확인했습니다.
+실제 생성 JAR의 신규 Java/JS/템플릿 포함 및 실제 private 설정/예제 제외 확인.
+전달 ZIP은 CRC·SHA256 목록·경로·SQL/설정 양식 바이트 일치·실제 개인 파일/
+빌드 결과물/업로드 자료/실행 스크립트 제외를 별도 검사합니다.
+상세: docs/verification/P03_SCHEMA.json, RELEASE_MANIFEST.json, MANIFEST_SHA256.txt.
+
+NOT_RUN — 사용자 환경에서 확인할 항목
+- 본인 OpenAI 프로젝트의 키·모델 접근·실제 유료 Responses/사진 해석·내용 품질.
+- Eclipse import/update/m2e, 실제 Windows/HeidiSQL/JDBC 연결.
+- 실제 브라우저 상호작용·여러 탭/브라우저 충돌·화면 크기별 사용성.
+- 장시간 JAR 서버 재시작/부하/다중 인스턴스/장애 복구/취소 후 외부 과금 집계.
+- 실제 SMTP/SOLAPI 수신, Google/카카오/네이버 로그인과 공급자 오류/동의 흐름.
+JAR 패키징과 Spring TestContext 기동을 실제 운영 서버 검수로 표시하지 않습니다.
+
+FUTURE — 이번 버전이 완료하지 않은 엔진
+기존 XLSX 가져오기·계산식/고급 분석·무제한 표, Word/HWP/PPT 전용 편집·실제 포맷 저장,
+CRM 실제 고객/조건/보기, 반복 일정/알림 발송, 프로그램 부품/불변 버전/실행 패키지,
+외부 클라이언트용 표준 MCP 프로토콜 서버. 기획 대비 상세는 P03_GOAL_AUDIT.txt.

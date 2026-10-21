@@ -1,0 +1,18 @@
+{
+  "release": "0.5.0",
+  "date": "2026-10-20",
+  "java_target": 17,
+  "junit": {
+    "passed": 60,
+    "failed": 0,
+    "skipped": 0
+  },
+  "storage_operations_assertions": 66,
+  "dom_assertions": 126,
+  "thymeleaf_variants": 30,
+  "docx_rendered_pages": 6,
+  "maven_goal_executed": false,
+  "production_database_accessed": false,
+  "paid_ai_called": false,
+  "browser_pixel_validation": false
+}

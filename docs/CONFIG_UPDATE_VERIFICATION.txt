@@ -1,0 +1,10 @@
+[역사 기록: v0.1.1 설정 검사] 현재 v0.3.0 수행 결과는 TEST_REPORT.txt를 읽으세요. 아래 미실행 표기는 당시 환경의 기록입니다.
+
+이 문서는 0.1.1 당시의 기록입니다. 현재 검수 기록은 TEST_REPORT.txt 및 FULL_PACKAGE_CHECKS.txt를 읽으세요.
+0.1.1 설정 변경 검증 / 2026-10-09
+공식 Boot 4.1.1 속성 목록 확인: spring.web.error.include-message/include-stacktrace/include-binding-errors.
+YAML 중복 키 검사와 파싱, DB URL jdbc:mariadb://127.0.0.1:3306/AxPlatform, SQL USE/GRANT 대상 일치 확인.
+소스/별도 SQL byte 일치 및 소스 ZIP에 개인 실파일이 없는지 검사.
+개인 설정 양식은 DB 아이디/비밀번호 placeholder만 포함하며 실제 비밀값을 포함하지 않음.
+Maven/실제 MariaDB/Eclipse 실행 검증은 미실행. 기존 docs/TEST_REPORT.txt는 0.1.0 기반의 검사 기록.
+https://docs.spring.io/spring-boot/appendix/application-properties/index.html

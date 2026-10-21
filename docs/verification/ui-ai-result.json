@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": 15,
+  "scope": "Production AI review with minimal DOM/API doubles: READY presentation, preserve dirty manual input, reject stale base, explicit checked fields only, matching idempotency header/body, prevent reapply.",
+  "browser": "NOT_RUN",
+  "actualOpenAi": "NOT_RUN"
+}

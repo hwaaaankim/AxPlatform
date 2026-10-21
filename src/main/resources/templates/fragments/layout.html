@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="documentHead(title)">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+<title th:text="${title} + ' · ' + ${appName ?: 'AxPlatform'}">AxPlatform</title>
+<link rel="stylesheet" th:href="@{/css/app.css(v='0.6.0')}">
+<link rel="stylesheet" th:href="@{/css/workspace.css(v='0.6.0')}">
+<link rel="stylesheet" th:href="@{/css/form-controls.css(v='0.6.0')}">
+<link rel="stylesheet" th:href="@{/css/operations.css(v='0.6.0')}">
+<link rel="stylesheet" th:href="@{/css/layout.css(v='0.6.0')}">
+<script type="module" th:src="@{/js/app-shell.js(v='0.6.0')}">
+</script>
+</head>
+<body>
+<div th:fragment="adminShell()" class="app-frame" data-shell="admin">
+<a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+<header class="topbar">
+<button class="button icon-button" type="button" data-menu-toggle aria-controls="app-sidebar" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+<a class="brand" th:href="@{/admin}">
+<span class="brand-mark" aria-hidden="true">A</span>
+<span th:text="${appName}">AxPlatform</span>
+<span class="badge">관리자</span>
+</a>
+<nav aria-label="공간 이동">
+<a th:href="@{/dashboard}">업무 공간 ↗</a>
+</nav>
+<form th:action="@{/logout}" method="post">
+<button class="button quiet">로그아웃</button>
+</form>
+</header>
+<aside class="sidebar" id="app-sidebar" aria-label="관리 탐색">
+<div class="sidebar-caption">WORKSPACE ADMIN</div>
+<nav>
+<a href="/admin" data-icon="home">관리 현황</a>
+<a href="/admin/members" data-icon="users">회원관리</a>
+<a href="/admin/permissions" data-icon="shield">권한관리</a>
+<a href="/admin/files" data-icon="document">회원 자료 · 용량</a>
+<a href="/admin/operations" data-icon="grid">활동 · AI 사용량</a>
+<a href="/admin/system" data-icon="settings">시스템 연결</a>
+<a href="/admin/password" data-icon="lock">비밀번호 변경</a>
+</nav>
+<div class="sidebar-bottom">
+<a href="/dashboard" data-icon="grid">업무 공간 열기 <span>↗</span>
+</a>
+<p>회원과 권한을 확인하고<br>업무 공간에서 직접 검토하세요.</p>
+</div>
+</aside>
+<button class="sidebar-backdrop" aria-label="메뉴 닫기" hidden>
+</button>
+</div>
+<div th:fragment="workspaceShell()" class="app-frame" data-shell="workspace">
+<a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+<header class="topbar">
+<button class="button icon-button" type="button" data-menu-toggle aria-controls="app-sidebar" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+<a class="brand" th:href="@{/dashboard}">
+<span class="brand-mark" aria-hidden="true">A</span>
+<span th:text="${appName}">AxPlatform</span>
+</a>
+<nav aria-label="공간 이동">
+<a th:if="${admin}" th:href="@{/admin}">관리 홈 ↗</a>
+</nav>
+<form th:action="@{/logout}" method="post">
+<button class="button quiet">로그아웃</button>
+</form>
+</header>
+<aside class="sidebar" id="app-sidebar" aria-label="업무 탐색">
+<div class="sidebar-caption">MY WORKSPACE</div>
+<nav>
+<a href="/dashboard" data-icon="home" data-workflow="ALL">전체 업무</a>
+<a href="/my/files" data-icon="document">내 자료 · 사용량</a>
+<div class="sidebar-caption">업무 도구</div>
+<a href="/dashboard?workflow=EXCEL" data-icon="table" data-workflow="EXCEL">엑셀 · 데이터</a>
+<a href="/dashboard?workflow=WORD" data-icon="document" data-workflow="WORD">워드 <small>준비</small>
+</a>
+<a href="/dashboard?workflow=HWP" data-icon="document" data-workflow="HWP">한글 <small>준비</small>
+</a>
+<a href="/dashboard?workflow=PPT" data-icon="slides" data-workflow="PPT">프레젠테이션 <small>준비</small>
+</a>
+<a href="/dashboard?workflow=CRM" data-icon="users" data-workflow="CRM">고객관리 <small>준비</small>
+</a>
+<a href="/dashboard?workflow=CALENDAR" data-icon="calendar" data-workflow="CALENDAR">일정 <small>준비</small>
+</a>
+<a href="/dashboard?workflow=APP" data-icon="grid" data-workflow="APP">프로그램 <small>준비</small>
+</a>
+</nav>
+<div class="sidebar-bottom">
+<span class="availability-dot">
+</span> 나만의 업무 공간<p>자료를 정리하고, 저장한 작업을<br>다음 업무에 이어서 사용하세요.</p>
+<a th:if="${admin}" href="/admin" data-icon="shield">관리자 페이지 ↗</a>
+</div>
+</aside>
+<button class="sidebar-backdrop" aria-label="메뉴 닫기" hidden>
+</button>
+</div>
+<header th:fragment="guestHeader()" class="topbar">
+<a class="brand" th:href="@{/login}">
+<span class="brand-mark">A</span>
+<span th:text="${appName}">AxPlatform</span>
+</a>
+<nav>
+<a th:href="@{/login}">로그인</a>
+<a th:if="${connections.registration}" th:href="@{/signup}">회원가입</a>
+</nav>
+</header>
+<footer th:fragment="pageFooter()" class="footer">내 업무를 더 쉽게, 내 방식대로.</footer>
+</body>
+</html>

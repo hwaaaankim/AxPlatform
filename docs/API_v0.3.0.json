@@ -1,0 +1,380 @@
+{
+  "version": "0.3.0",
+  "schema": "V003",
+  "verification": "Actual execution evidence is TEST_REPORT.txt. No real OpenAI project-key test.",
+  "retained_api": "P1_API.json is the historical v0.2.0 API snapshot, not a current runtime report.",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/ai/settings",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "POST",
+      "path": "/api/drafts/{id}/ai-runs",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "GET",
+      "path": "/api/drafts/{id}/ai-runs",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ai-runs/{id}",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai-runs/{id}/cancel",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai-runs/{id}/apply",
+      "controller": "AiApiController"
+    },
+    {
+      "method": "GET",
+      "path": "/api/drafts/{id}/sheet",
+      "controller": "SheetApiController"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/drafts/{id}/sheet",
+      "controller": "SheetApiController"
+    },
+    {
+      "method": "POST",
+      "path": "/api/drafts/{id}/sheet/undo",
+      "controller": "SheetApiController"
+    },
+    {
+      "method": "GET",
+      "path": "/api/drafts/{id}/sheet.xlsx",
+      "controller": "SheetApiController"
+    }
+  ],
+  "authentication": {
+    "session": "same-origin authenticated account; current server role/action/owned business scope",
+    "csrf": "All POST/PATCH requests require CSRF.",
+    "idempotency": "AI start/apply: Idempotency-Key must equal body requestKey, ASCII [A-Za-z0-9_-]{8,100}. Same key/payload returns prior result; a changed payload conflicts."
+  },
+  "sheet": {
+    "body": {
+      "sheet": "columns/rows/rowIds below",
+      "version": "current sheet version, -1 if absent",
+      "draftVersion": "current common draft version"
+    },
+    "response": [
+      "draftId",
+      "version",
+      "draftVersion",
+      "sheet",
+      "canUndo"
+    ],
+    "data": {
+      "columns": [
+        {
+          "id": "stable ASCII ID, max40",
+          "label": "nonblank max100",
+          "type": "TEXT|NUMBER|DATE",
+          "unit": "max30, default empty",
+          "width": "integer80..480, default160"
+        }
+      ],
+      "rows": "array of string-cell arrays, exactly one cell per column",
+      "rowIds": "stable unique ASCII row IDs, max64, one per row. Preserve IDs on cell edits/reorder; new rows get new IDs. Omitting IDs may generate new IDs, not preserve identity."
+    },
+    "limits": {
+      "columns": 20,
+      "rows": 200,
+      "cellLength": 2000,
+      "utf8Bytes": 2000000,
+      "numberPrecision": 15,
+      "numberDecimals": 12,
+      "date": "ISO YYYY-MM-DD, 1900..9999; zero-prefixed codes use TEXT"
+    },
+    "permissions": {
+      "read": [
+        "workspace.sheet.read",
+        "workspace.draft.read"
+      ],
+      "save_base": [
+        "workspace.sheet.update",
+        "workspace.sheet.read",
+        "workspace.draft.update",
+        "workspace.draft.read"
+      ],
+      "actual_diff": [
+        "workspace.sheet.schema.update: column/property/order changes",
+        "workspace.sheet.rows.create: new row IDs",
+        "workspace.sheet.rows.delete: removed row IDs",
+        "workspace.sheet.cells.update: retained-row values/order changes"
+      ],
+      "undo": "same current versions and actual-diff permissions; restores one previous server sheet; not a global undo"
+    },
+    "versions": "Changed manual apply/undo updates both sheet and common draft. No-change save retains versions. Stale inputs conflict without overwriting local edits. AI sheet apply is in the outer draft transaction.",
+    "export": {
+      "data": "GET /api/drafts/{id}/sheet.xlsx",
+      "template": "GET /api/drafts/{id}/sheet.xlsx?template=true",
+      "data_action": "workspace.sheet.export",
+      "template_action": "workspace.sheet.export.template",
+      "both_also_require": [
+        "workspace.sheet.read",
+        "workspace.draft.read"
+      ],
+      "semantics": "Read-only server snapshot; template contains current columns and no actual rows; no import/reset. OOXML XLSX, no-store, X-Ax-Sheet-Version. Original session and permissions rechecked while streaming."
+    },
+    "clone": "Existing POST /api/drafts/{id}/clone creates a new draft; EXCEL table columns only, rows/rowIds empty. Requires sheet read/update/schema permissions when a table exists."
+  },
+  "ai": {
+    "settings": [
+      "available",
+      "model",
+      "reasoningEffort",
+      "reason",
+      "limits"
+    ],
+    "start_body": {
+      "prompt": "nonblank <=12000",
+      "assetIds": "explicit selected linked PNG/JPG/TXT, max3 and total6MB",
+      "requestKey": "same header value",
+      "draftVersion": "current draft version",
+      "sheetVersion": "current EXCEL sheet version, otherwise -1",
+      "previousRunId": "null or current same-account/same-draft READY/APPLIED proposal"
+    },
+    "apply_body": {
+      "requestKey": "same Idempotency-Key header",
+      "draftVersion": "base and current common draft version",
+      "sheetVersion": "base and current sheet version",
+      "fields": [
+        "title",
+        "purpose",
+        "data",
+        "result",
+        "details",
+        "audience",
+        "sheet"
+      ],
+      "editedProposal": "null uses stored proposal; otherwise complete validated proposal",
+      "acceptAssumptions": "true required when assumptions exist"
+    },
+    "apply_scope": "Only selected fields change. Active draft, original login session, current policy, base versions, readiness, assumptions and actual sheet-change permissions are checked. Draft/sheet/APPLIED status commit together or roll back. READY never auto-applies.",
+    "cancel_body": {},
+    "cancel_scope": "QUEUED/RUNNING/READY -> CANCELLED. APPLIED stays applied. Does not revert saved changes or promise supplier-cost refund.",
+    "public_run": [
+      "id",
+      "draftId",
+      "status",
+      "phase",
+      "baseDraftVersion",
+      "baseSheetVersion",
+      "proposal",
+      "model",
+      "reasoningEffort",
+      "inputTokens",
+      "outputTokens",
+      "errorCode",
+      "message",
+      "applied",
+      "createdAt",
+      "updatedAt",
+      "prompt",
+      "toolNames"
+    ],
+    "statuses": {
+      "QUEUED": "server queue",
+      "RUNNING": "provider/tools",
+      "READY": "review available, not yet applied",
+      "APPLIED": "selected changes committed",
+      "FAILED": "safe error, prior data retained",
+      "CANCELLED": "no future automatic apply"
+    },
+    "list": "latest <=10 own-account/draft runs; current ai.read required; a new login may read own history but cannot apply a different original-session result",
+    "proposal_keys": [
+      "summary",
+      "confirmed",
+      "assumptions",
+      "questions",
+      "draft",
+      "sheet",
+      "warnings",
+      "ready"
+    ],
+    "question_keys": [
+      "id",
+      "field",
+      "title",
+      "reason",
+      "choices",
+      "recommended",
+      "required"
+    ],
+    "draft_keys": {
+      "title": "max100",
+      "answers": [
+        "purpose",
+        "data",
+        "result",
+        "details",
+        "audience"
+      ]
+    },
+    "non_excel": "sheet must be null; six other workflows provide common briefs/proposals, not final business engines",
+    "tools": [
+      "read_workflow_guide",
+      "read_current_draft",
+      "read_current_sheet",
+      "propose_workflow"
+    ],
+    "boundary": "Java internal scoped allowlist, not a public standard MCP endpoint. No arbitrary SQL/shell/code, secret key or disk path exposure.",
+    "defaults": {
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high",
+      "maxOutputTokens": 16000,
+      "requestTimeoutSeconds": 120,
+      "maxToolRounds": 6,
+      "maxAssets": 3,
+      "maxDailyRuns": 30,
+      "maxConcurrentRuns": 2,
+      "workerThreads": 2,
+      "jobTimeoutSeconds": 300
+    },
+    "limits_semantics": "UTC daily registered starts include failed/cancelled runs. No automatic paid retry. Expired/restarted leases become failure instead of blind reruns."
+  },
+  "new_actions": [
+    {
+      "code": "workspace.ai.run",
+      "name": "AI 제안 만들기",
+      "dependencies": [
+        "workspace.ai.read",
+        "workspace.draft.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.ai.run"
+    },
+    {
+      "code": "workspace.ai.read",
+      "name": "AI 제안 조회",
+      "dependencies": [
+        "workspace.draft.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.ai.read"
+    },
+    {
+      "code": "workspace.ai.apply",
+      "name": "AI 제안 선택 반영",
+      "dependencies": [
+        "workspace.ai.read",
+        "workspace.draft.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.ai.apply"
+    },
+    {
+      "code": "workspace.ai.cancel",
+      "name": "AI 작업·제안 취소",
+      "dependencies": [
+        "workspace.ai.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.ai.cancel"
+    },
+    {
+      "code": "workspace.sheet.read",
+      "name": "엑셀 표 조회",
+      "dependencies": [
+        "workspace.draft.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.read"
+    },
+    {
+      "code": "workspace.sheet.update",
+      "name": "엑셀 표 변경 적용",
+      "dependencies": [
+        "workspace.sheet.read",
+        "workspace.draft.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.update"
+    },
+    {
+      "code": "workspace.sheet.export",
+      "name": "엑셀 데이터 다운로드",
+      "dependencies": [
+        "workspace.sheet.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.export"
+    },
+    {
+      "code": "workspace.sheet.schema.update",
+      "name": "엑셀 열 구조 수정",
+      "dependencies": [
+        "workspace.sheet.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.schema.update"
+    },
+    {
+      "code": "workspace.sheet.rows.create",
+      "name": "엑셀 행 추가",
+      "dependencies": [
+        "workspace.sheet.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.rows.create"
+    },
+    {
+      "code": "workspace.sheet.rows.delete",
+      "name": "엑셀 행 삭제",
+      "dependencies": [
+        "workspace.sheet.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.rows.delete"
+    },
+    {
+      "code": "workspace.sheet.cells.update",
+      "name": "엑셀 셀 수정",
+      "dependencies": [
+        "workspace.sheet.update"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.cells.update"
+    },
+    {
+      "code": "workspace.sheet.export.template",
+      "name": "엑셀 빈 양식 다운로드",
+      "dependencies": [
+        "workspace.sheet.read"
+      ],
+      "customer_default": "DENY_UNTIL_ADMIN_ASSIGNS",
+      "binding": "workspace.sheet.export.template"
+    }
+  ],
+  "errors": {
+    "shape": "{code,message,details?}",
+    "400": "invalid input/header",
+    "401": "current/original session ended",
+    "403": "role/action/scope denied",
+    "404": "missing/not owned",
+    "409": "stale version/idempotency/already-applied/not-ready",
+    "422": "proposal/assumption/type/size/required-dependency failure",
+    "429": "daily/concurrent limit",
+    "503": "configuration/provider/export unavailable"
+  },
+  "preservation": "V003 adds two tables/catalog definitions and dependencies only; no automatic tier grants or account/data/policy/private-config reset.",
+  "not_implemented": [
+    "file import append/reset/snapshot recovery",
+    "formula engine/recalculation",
+    "server analysis/charts/saved views",
+    "final Word/HWP/PPT engines",
+    "CRM/calendar business engines",
+    "app build/execute packages",
+    "payments/customer messaging"
+  ]
+}

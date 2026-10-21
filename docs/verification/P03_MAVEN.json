@@ -1,0 +1,75 @@
+{
+  "command": "mvn -B -U package (Java17, Maven3.9.12, isolated artifact cache)",
+  "java": "17.0.20",
+  "maven": "3.9.12",
+  "suites": [
+    {
+      "class": "com.axplatform.BootstrapIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.P1CoreTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.P1IntegrationTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.P3SheetIntegrationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.PasswordRulesTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.SessionLeaseTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.ai.P3ResponsesTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.axplatform.sheet.P3SheetRulesTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_isolation": "Spring integration tests use optional classpath-only spring.config.location and unique H2 memory URLs, never application-private.yml; fixture cleanup verifies exact H2 URL first",
+  "mocking": "test-only Mockito subclass mock maker avoids runtime self-attach; mocked HttpClient/HttpResponse never call provider",
+  "real_provider": "NOT_RUN: no real OpenAI key/call",
+  "browser": "NOT_RUN: MockMvc renders actual Thymeleaf server HTML, no browser JavaScript/visual validation",
+  "pass": true,
+  "package": "PASS: executable Spring Boot JAR produced; actual long-lived JAR server launch NOT_RUN"
+}

@@ -1,0 +1,266 @@
+{
+  "status": "PASS",
+  "validation": "Actual production SheetRules + XlsxWriter compiled and executed with JDK17; generated OOXML workbooks loaded by openpyxl; no Spring, Maven, database, or OpenAI calls involved.",
+  "checkCount": 51,
+  "openpyxlVersion": "3.1.5",
+  "artifacts": [
+    {
+      "name": "xlsx-runtime-data.xlsx",
+      "bytes": 3066,
+      "sha256": "24b5d5c6406d2979d7e7976e04e4a6839222a5f84121fea9a670c30f058eefaa"
+    },
+    {
+      "name": "xlsx-runtime-blank.xlsx",
+      "bytes": 2760,
+      "sha256": "c9f4ec3119dddd77a9a23e4e9ca7cadd43a472c182085e1e9a8a842f439012dd"
+    }
+  ],
+  "checks": [
+    {
+      "check": "workbook has single UTF8 sheet",
+      "status": "PASS"
+    },
+    {
+      "check": "data workbook dimensions",
+      "status": "PASS",
+      "detail": "A1:G4"
+    },
+    {
+      "check": "leading zero identifier literal TEXT",
+      "status": "PASS"
+    },
+    {
+      "check": "all zero identifier literal TEXT",
+      "status": "PASS"
+    },
+    {
+      "check": "formula-like TEXT stays literal B2",
+      "status": "PASS"
+    },
+    {
+      "check": "formula-like TEXT stays literal B3",
+      "status": "PASS"
+    },
+    {
+      "check": "formula-like TEXT stays literal B4",
+      "status": "PASS"
+    },
+    {
+      "check": "negative decimal is numeric",
+      "status": "PASS"
+    },
+    {
+      "check": "negative small decimal is numeric",
+      "status": "PASS"
+    },
+    {
+      "check": "15 significant digits preserved numeric",
+      "status": "PASS"
+    },
+    {
+      "check": "12 fractional digits preserved numeric",
+      "status": "PASS"
+    },
+    {
+      "check": "DATE ISO current date typed",
+      "status": "PASS"
+    },
+    {
+      "check": "DATE lower supported year typed",
+      "status": "PASS"
+    },
+    {
+      "check": "DATE upper supported year typed",
+      "status": "PASS"
+    },
+    {
+      "check": "UTF8 mixed scripts emoji XML escaping and newline",
+      "status": "PASS"
+    },
+    {
+      "check": "TEXT outer whitespace preserved",
+      "status": "PASS"
+    },
+    {
+      "check": "TEXT tabs preserved",
+      "status": "PASS"
+    },
+    {
+      "check": "TEXT negative-like value stays TEXT",
+      "status": "PASS"
+    },
+    {
+      "check": "empty cell remains blank",
+      "status": "PASS"
+    },
+    {
+      "check": "column width mapping A",
+      "status": "PASS",
+      "detail": {
+        "px": 112,
+        "xlsxWidth": 16.0
+      }
+    },
+    {
+      "check": "column width mapping B",
+      "status": "PASS",
+      "detail": {
+        "px": 210,
+        "xlsxWidth": 30.0
+      }
+    },
+    {
+      "check": "column width mapping C",
+      "status": "PASS",
+      "detail": {
+        "px": 140,
+        "xlsxWidth": 20.0
+      }
+    },
+    {
+      "check": "column width mapping D",
+      "status": "PASS",
+      "detail": {
+        "px": 160,
+        "xlsxWidth": 22.86
+      }
+    },
+    {
+      "check": "column width mapping E",
+      "status": "PASS",
+      "detail": {
+        "px": 280,
+        "xlsxWidth": 40.0
+      }
+    },
+    {
+      "check": "column width mapping F",
+      "status": "PASS",
+      "detail": {
+        "px": 154,
+        "xlsxWidth": 22.0
+      }
+    },
+    {
+      "check": "column width mapping G",
+      "status": "PASS",
+      "detail": {
+        "px": 80,
+        "xlsxWidth": 11.43
+      }
+    },
+    {
+      "check": "header unit suffix retained",
+      "status": "PASS"
+    },
+    {
+      "check": "header styled bold teal",
+      "status": "PASS"
+    },
+    {
+      "check": "header freeze pane",
+      "status": "PASS"
+    },
+    {
+      "check": "autofilter dimension",
+      "status": "PASS"
+    },
+    {
+      "check": "blank template headers only",
+      "status": "PASS"
+    },
+    {
+      "check": "blank template freeze and filter",
+      "status": "PASS"
+    },
+    {
+      "check": "blank template preserves widths and formats",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx ZIP CRC",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx no macro external relationships or formulas",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed [Content_Types].xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed _rels/.rels",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed xl/workbook.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed xl/_rels/workbook.xml.rels",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed xl/styles.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx XML wellformed xl/worksheets/sheet1.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-data.xlsx no executable formula nodes",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx ZIP CRC",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx no macro external relationships or formulas",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed [Content_Types].xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed _rels/.rels",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed xl/workbook.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed xl/_rels/workbook.xml.rels",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed xl/styles.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx XML wellformed xl/worksheets/sheet1.xml",
+      "status": "PASS"
+    },
+    {
+      "check": "xlsx-runtime-blank.xlsx no executable formula nodes",
+      "status": "PASS"
+    }
+  ],
+  "notRun": [
+    "Microsoft Excel GUI open/render",
+    "LibreOffice GUI render",
+    "Maven full project build",
+    "MariaDB integration",
+    "OpenAI live API"
+  ],
+  "sourceSha256": {
+    "src/main/java/com/axplatform/common/Problem.java": "82a3cab2cc2b1e4d19fd936417f4ec338e38a3f927b93a87a94c7c36d108d770",
+    "src/main/java/com/axplatform/sheet/SheetRules.java": "7910bd48f05b13aee66615013361b9728abcce87737a0510dae352eb872230ca",
+    "src/main/java/com/axplatform/sheet/XlsxWriter.java": "e6a9da1ab46f81819e3f92c41364fb7de548f06c3098fb9acc0d3f06e4d67afc"
+  },
+  "javaRelease": 17
+}

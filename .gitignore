@@ -1,0 +1,12 @@
+/config/application-private.yml
+/target/
+/data/
+/logs/
+/.classpath
+/.project
+/.settings/
+/.idea/
+/.vscode/
+*.log
+*.iml
+.DS_Store

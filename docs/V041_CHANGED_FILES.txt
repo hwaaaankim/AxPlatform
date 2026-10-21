@@ -1,0 +1,33 @@
+AxPlatform v0.4.1 변경 파일 목록
+기준: v0.4.0 / DB 및 YML 변경 없음
+
+docs/CHANGELOG.txt
+docs/V041_LAYOUT_FIX.txt
+pom.xml
+qa/README.txt
+qa/dom-regression.mjs
+src/main/resources/static/css/workspace.css
+src/main/resources/static/js/app-shell.js
+src/main/resources/templates/admin/index.html
+src/main/resources/templates/admin/member-detail.html
+src/main/resources/templates/admin/members.html
+src/main/resources/templates/admin/password.html
+src/main/resources/templates/admin/permissions.html
+src/main/resources/templates/admin/system.html
+src/main/resources/templates/auth/admin-login.html
+src/main/resources/templates/auth/login.html
+src/main/resources/templates/auth/recovery.html
+src/main/resources/templates/auth/reset.html
+src/main/resources/templates/auth/signup.html
+src/main/resources/templates/auth/social-existing.html
+src/main/resources/templates/auth/terms.html
+src/main/resources/templates/error/403.html
+src/main/resources/templates/error/404.html
+src/main/resources/templates/error/5xx.html
+src/main/resources/templates/error/failure.html
+src/main/resources/templates/fragments/layout.html
+src/main/resources/templates/workspace/dashboard.html
+src/main/resources/templates/workspace/draft.html
+src/main/resources/templates/workspace/index.html
+src/test/java/com/axplatform/V004UiContractTest.java
+docs/V041_CHANGED_FILES.txt

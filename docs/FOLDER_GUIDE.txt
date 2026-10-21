@@ -1,0 +1,17 @@
+AxPlatform v0.3.0 폴더 역할
+
+config/application-private.example.yml — 새 PC/첫 작성용 빈 개인 설정 예제. 비밀 아닌 기본값 포함.
+config/application-private.yml — 사용자가 휴대·보관할 개인 파일. 제공/Git/JAR 제외.
+src/main/java/com/axplatform/auth — 가입/복구/발송/SNS 인증.
+identity — 계정 조회·관리. policy — 행동 카탈로그·고정 의존·등급 정책·현재 권한/범위.
+workspace — 사업·홈·업무 요약 초안·첨부·SSE. security — 세션·암호·긴 응답 원래 세션 검사.
+ai — 실제 Responses API, 제한 도구 실행, 제안 검증, 비동기 상태/적용/취소·설정.
+sheet — 표 형식/실제 변경 권한 검증·DB 적용/되돌리기·실제 XLSX 생성.
+web — Thymeleaf 페이지·fragment와 JSON API. config/bootstrap — 설정·스키마/최초 관리자 확인.
+src/main/resources/templates — 서버 렌더링 화면. static/js — 공통 fetch와 업무별 ES modules.
+static/css — 공통 스타일. 기본 웹 실행에 별도 Node/npm 프로젝트를 요구하지 않습니다.
+src/test — 자동 테스트 전용 모의 연결/H2 테스트 소스. MariaDB 설치 SQL로 사용하지 않습니다.
+db/manual — HeidiSQL에서 직접 실행할 SQL. 현재 0.2.0 DB에는 06 → 07만 추가 실행합니다.
+docs/API_v0.3.0.json — 현재 추가 API 계약. P1_API.json은 0.2.0 보존 API 기록입니다.
+docs/P03_GOAL_AUDIT.txt — 기획 대조·이번 범위·후속 검수. TEST_REPORT.txt — 실제 수행 결과와 한계.
+이전 버전 README와 P1 문서는 역사/기존 기능 안내이며 최신 업데이트 순서는 루트 README_UPDATE_v0.3.0.txt가 우선입니다.

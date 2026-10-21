@@ -1,0 +1,190 @@
+{
+  "version": "0.4.2",
+  "type": "Happy DOM with mocked API responses",
+  "passed": 98,
+  "suites": [
+    {
+      "command": "node qa/controls-regression.mjs",
+      "suite": "form-controls",
+      "passed": 27,
+      "checks": [
+        "multiple list and explicit limit",
+        "append and deduplicate",
+        "remove only one",
+        "reject wrong extension and empty file",
+        "reject oversized file",
+        "enforce queue limit",
+        "clear all",
+        "invalid replacement preserves single file",
+        "reject multiple into single",
+        "valid replacement",
+        "lock queue during upload",
+        "partial success retains only failed file",
+        "retry does not resend successful files",
+        "stop on permission failure",
+        "disabled native input controls custom buttons",
+        "native selection creates list",
+        "form reset clears pending files",
+        "strict date validation",
+        "invalid imported text preserved",
+        "cancel preserves value",
+        "apply emits ISO and restores focus",
+        "min max restrict days",
+        "required date cannot clear",
+        "optional clear",
+        "disabled date cannot open",
+        "datetime hour minute selection",
+        "dynamic controls enhance exactly once"
+      ]
+    },
+    {
+      "command": "node qa/dom-regression.mjs draft",
+      "page": "draft",
+      "passed": 14
+    },
+    {
+      "command": "node qa/dom-regression.mjs dashboard",
+      "page": "dashboard",
+      "passed": 4
+    },
+    {
+      "command": "node qa/dom-regression.mjs admin",
+      "page": "admin",
+      "passed": 5
+    },
+    {
+      "command": "node qa/dom-regression.mjs login",
+      "page": "login",
+      "passed": 3
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs dashboard",
+      "scenario": "dashboard",
+      "passed": 8,
+      "checks": [
+        "upload results visible with failed file retained",
+        "retry only failed upload",
+        "cancel scope switch retains queue and business",
+        "cancel saved delete sends no request",
+        "delete all is scoped to displayed search",
+        "deleted saved file can be restored",
+        "selected deletion retains unselected file",
+        "list failure is visible rather than false empty success"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-EXCEL",
+      "scenario": "files-EXCEL",
+      "passed": 6,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file",
+        "import disables replacement and encoding during request",
+        "single import shows worksheet and mappings",
+        "import reset removes preview and file but not sheet"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-WORD",
+      "scenario": "files-WORD",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-HWP",
+      "scenario": "files-HWP",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-PPT",
+      "scenario": "files-PPT",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-CRM",
+      "scenario": "files-CRM",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-CALENDAR",
+      "scenario": "files-CALENDAR",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs files-APP",
+      "scenario": "files-APP",
+      "passed": 3,
+      "checks": [
+        "source switch preserves queued files",
+        "workflow upload links success and retains failure",
+        "unlink does not delete saved file"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs member",
+      "scenario": "member",
+      "passed": 3,
+      "checks": [
+        "existing tier expiry prefilled",
+        "invalid date blocks server mutation",
+        "expiry clear explicitly sends empty value"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs permissions",
+      "scenario": "permissions",
+      "passed": 4,
+      "checks": [
+        "catalog select visible counts selections",
+        "filter preserves checked choices",
+        "clear catalog selection includes hidden choices",
+        "catalog reset restores list"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs recovery",
+      "scenario": "recovery",
+      "passed": 3,
+      "checks": [
+        "ID recovery excludes hidden email from validation",
+        "password recovery requires email",
+        "switching back does not let hidden invalid email block request"
+      ]
+    },
+    {
+      "command": "node qa/flow-controls-regression.mjs ai",
+      "scenario": "ai",
+      "passed": 3,
+      "checks": [
+        "AI count limit rejects fourth selection",
+        "AI clear does not delete files or unlink task attachment",
+        "AI byte limit rejects oversized selection immediately"
+      ]
+    }
+  ]
+}

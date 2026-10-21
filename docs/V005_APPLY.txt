@@ -1,0 +1,38 @@
+AxPlatform 0.5.0 적용 안내
+기준: 0.4.2 적용 프로젝트 / V004까지 완료한 MariaDB / Java 17 / Eclipse / HeidiSQL
+
+1. 먼저 앱을 완전히 중지합니다. DB 전체와 기존 ax.storage-root 폴더, 현재 프로젝트를 백업합니다.
+2. ZIP의 AxPlatform 폴더를 새 작업 폴더에 풀고 기존 config/application-private.yml을 같은 위치에 복사합니다. 비밀 설정은 ZIP에 포함하지 않았습니다. DB 비밀번호·API 키를 소스에 옮기지 마세요.
+   기존 프로젝트에 덮어쓸 경우 src/main, src/test, db, docs, qa, pom.xml을 모두 반영합니다. 변경 파일 목록은 V005_CHANGED_FILES.txt입니다. target·data·개인 설정은 덮어쓰지 않습니다.
+3. HeidiSQL에서 기존 AxPlatform DB를 선택하고 db/manual/10_V005__storage_and_operations.sql 전체를 실행합니다. 다음으로 11_VERIFY_V005.sql을 실행합니다. 기존 01~09 SQL을 초기화 목적으로 다시 실행하지 마세요. V005가 없으면 앱은 시작을 중지합니다.
+   DDL은 암묵 커밋이 있으므로 중간 오류가 나면 앱을 켜지 말고 오류를 해결한 다음 같은 V005 SQL을 다시 실행합니다. V005 SQL은 반복 적용을 고려했습니다.
+4. Eclipse Run Configurations > Arguments > VM arguments에 다음 중 하나를 지정합니다.
+   로컬: -Dspring.profiles.active=dev
+   서버: -Dspring.profiles.active=test
+   프로파일을 생략하면 dev입니다. test는 이 프로젝트의 서버용 프로파일 이름이며 자동 테스트 DB를 뜻하지 않습니다.
+5. 기본 폴더는 D:/AxPlatform/dev 또는 D:/AxPlatform/test입니다. 앱 계정에 폴더 생성·읽기·쓰기·삭제 권한을 부여합니다. D드라이브가 없는 PC 또는 Linux 서버는 실행 환경 변수 AX_STORAGE_ROOT를 실제 절대 경로로 지정합니다.
+   기존 private의 ax.storage-root는 이제 기존 파일을 읽는 legacy 경로입니다. 기존 파일을 새 경로로 일괄 이동하고 이 값을 바꾸지 마세요. 새 자료는 ax.storage.root로 저장합니다.
+6. dev와 test는 별도 DB와 별도 자료 폴더를 사용합니다. 기존 AxPlatform DB를 현재 dev용으로 유지해도 됩니다. 서버 test에는 별도 DB를 준비하고 해당 서버의 private 설정에 연결합니다.
+   같은 DB에 서로 다른 로컬 디스크를 연결하면 파일을 찾을 수 없으므로 앱은 DB에 환경·루트·storage-volume.id를 바인딩합니다. 다른 PC에서 DB를 공유할 때 경로 문자열이 같아도 저장소 식별 파일이 다르면 중지합니다.
+   서버 이전: 앱 중지 → DB 백업/복사 → 저장 루트 전체와 기존 legacy 폴더 복사(storage-volume.id 포함) → 새 private 연결과 프로파일 설정 → 12_STORAGE_REBIND_TEMPLATE.sql의 값을 확인·수정하여 실행 → 검증 후 재시작합니다. 원본을 백업하지 않은 상태에서 식별 파일만 지우지 마세요.
+7. Eclipse에서 프로젝트 Refresh → Maven > Update Project → Project Clean → 실행합니다. pom.xml의 버전은 0.5.0입니다. 리소스 캐시 버전도 함께 바뀝니다.
+8. 관리자 > 회원 자료 · 용량에서 본인과 고객 계정을 찾아 목록·실제 경로·용량을 확인합니다. 기존 파일은 LEGACY에서 계속 읽습니다. '새 폴더로 이전'은 복사·해시 확인 후 DB 참조를 바꿉니다. 기존 원본은 이전 사본으로 추적합니다.
+   새 원본을 확인한 후 '이전 후 남긴 원본 사본'에서 사본 정리를 실행합니다. 사본은 고객 용량에 중복 합산하지 않지만 서버 디스크를 사용합니다. 고객의 영구 삭제는 해당 자료의 추적된 이전 사본도 함께 정리합니다.
+9. 관리자 > 활동 · AI 사용량에서 사용 모델의 정확한 요금표에 따라 일반 입력·캐시 읽기·캐시 쓰기·출력 단가를 USD/100만 토큰으로 등록합니다. 임의 단가는 넣지 않았습니다.
+   단가가 없어도 토큰 집계는 됩니다. 비용은 '미확인'입니다. USD 한도를 켜려면 현재 모델 단가와 기존 미정산 사용량을 먼저 확인하세요. 한도는 회원 자료 · 용량에서 설정합니다.
+10. 실제 환경 점검: 사진/TXT 여러 개 업로드, CSV/XLSX 1개 가져오기, 재사용 자료 선택, 개별 연결 해제, 저장·재열기, 휴지통·복원·영구 삭제, 관리자 파일 이전, AI 요청 1건과 사용량 집계를 순서대로 확인합니다.
+    실제 유료 AI·Windows D드라이브·사용자 MariaDB 연결은 이 납품 검증에서 호출/변경하지 않았습니다. 실행한 검사는 V005_VALIDATION.txt에 구분했습니다.
+
+동작 구분
+- 작업에서 ×/전체 연결 해제: 원본 파일을 삭제하지 않습니다. 작업 저장 시 연결 변경이 반영됩니다.
+- 휴지통: 원본 보존, 복원 가능, 용량 유지. 연결된 작업에서는 해당 원본을 읽거나 AI로 전송할 수 없습니다.
+- 영구 삭제: 연결 작업과 저장 기준의 첨부 참조까지 확인하고 제거합니다. 실행 중 AI가 사용하면 차단합니다. 파일 삭제 성공 후 용량을 반환합니다. 삭제 실패는 PURGING으로 남고 60초 주기 자동 재시도 또는 버튼으로 복구합니다.
+- 개별 등록은 멱등 요청키로 재시도합니다. 같은 대기 파일의 응답 유실 재시도가 중복 원본을 만들지 않습니다. 새로 다시 선택하여 새 요청으로 등록하면 별개 자료입니다.
+- 한도 0: 월 AI 토큰·USD 한도는 무제한입니다. 저장 용량은 0으로 설정할 수 없습니다. 최초 기본 저장 한도는 회원당 1GiB입니다.
+- 일반 고객의 자료 조회/업로드/다운로드/휴지통/복원은 기존 자료 권한을 따릅니다. 영구 삭제는 자료 보관(archive) 권한과 소유자 검사를 함께 적용합니다. 새 권한을 고객에게 자동 확대하지 않습니다.
+
+프로파일 설정 파일
+src/main/resources/application.yml: 공통 설정·로그·기본 용량·보관 기간·OpenAI 비밀값 없는 기본값
+src/main/resources/application-dev.yml: dev 환경·D:/AxPlatform/dev
+src/main/resources/application-test.yml: test 환경·D:/AxPlatform/test
+config/application-private.yml: 기존 DB·키·환경별 접속 정보 유지, Git/JAR/배포 ZIP에서 제외

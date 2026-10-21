@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "checks": 18,
+  "scope": "Production sheet widget with minimal DOM/API doubles: direct creation, cell edits, stable IDs, server payload, write lock release, granular controls. Not a browser render test.",
+  "browser": "NOT_RUN"
+}

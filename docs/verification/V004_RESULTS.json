@@ -1,0 +1,128 @@
+{
+  "release": "0.4.0",
+  "tests": [
+    {
+      "name": "com.axplatform.SessionLeaseTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.V004UiContractTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.sheet.V004WorkflowRulesTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.BootstrapIntegrationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.P3SheetIntegrationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.P1CoreTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.P1IntegrationTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.ai.P3ResponsesTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.PasswordRulesTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.axplatform.sheet.P3SheetRulesTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "java_tests": 57,
+  "javascript_modules": 19,
+  "rendered_pages": 21,
+  "dom": [
+    {
+      "page": "draft",
+      "checks": [
+        "first view contains only source choices",
+        "direct route opens preparation",
+        "only table tab visible",
+        "manual row is editable",
+        "AI tab preserves manual cells",
+        "save calls real client mutation routes and preserves input",
+        "saved analysis request sent only after aggregate preview",
+        "edit after save preserves data",
+        "tutorial opens modal",
+        "tutorial progresses",
+        "tour closes and restores original editor",
+        "tutorial can reopen after opt out"
+      ],
+      "requestCount": 18
+    },
+    {
+      "page": "dashboard",
+      "checks": [
+        "dashboard uses fetched counts",
+        "workflow filter changes overview and list",
+        "empty search state has reason",
+        "filters preserved in URL"
+      ],
+      "requestCount": 6
+    },
+    {
+      "page": "login",
+      "checks": [
+        "password toggle",
+        "password remasked",
+        "single brand"
+      ],
+      "requestCount": 0
+    }
+  ],
+  "mariadb": {
+    "version": "10.11.14",
+    "mode": "offline-bootstrap",
+    "fresh_v001_to_v004": "pass",
+    "v004_rerun": "pass",
+    "before": "34|4|277|84",
+    "after": "34|4|277|84",
+    "final_table_migrations_actions_grants_dependencies": "34|4|277|84|5"
+  },
+  "browser_visual": "NOT_RUN: local socket creation blocked; escalation rejected",
+  "external_ai_oauth_delivery": "NOT_RUN"
+}

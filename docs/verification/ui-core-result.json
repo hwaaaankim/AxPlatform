@@ -1,0 +1,7 @@
+{
+  "checks": 133,
+  "status": "PASS",
+  "scope": "Production pure column transforms preserve leading-zero identifiers, negative values, row identities; invalid reorder rejected; source has no HTML injection execution path.",
+  "browser": "NOT_RUN",
+  "generatedAt": "2026-10-20T01:14:30.905Z"
+}

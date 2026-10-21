@@ -1,0 +1,433 @@
+{
+  "version": "0.2.0",
+  "schema": "V002",
+  "customer_actions": [
+    "workspace.asset.archive",
+    "workspace.asset.download",
+    "workspace.asset.list",
+    "workspace.asset.restore",
+    "workspace.asset.upload",
+    "workspace.dashboard.manage",
+    "workspace.dashboard.read",
+    "workspace.draft.archive",
+    "workspace.draft.cancel",
+    "workspace.draft.clone",
+    "workspace.draft.create",
+    "workspace.draft.list",
+    "workspace.draft.read",
+    "workspace.draft.restore",
+    "workspace.draft.save",
+    "workspace.draft.update",
+    "workspace.events.read",
+    "workspace.scope.archive",
+    "workspace.scope.create",
+    "workspace.scope.read",
+    "workspace.scope.update"
+  ],
+  "runtime_verification": "NOT_RUN",
+  "routes": [
+    {
+      "method": "GET",
+      "route": "/api/session/csrf",
+      "controller": "SessionApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/me",
+      "controller": "SessionApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/login",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/login",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/members",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/members/{id}",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/fragments/admin/members",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/permissions",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/system",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/admin/password",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/admin/password",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/workspace",
+      "controller": "PageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/permissions",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/permissions/preview",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/permissions/apply",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/permissions/history",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/permissions/history/{id}",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/permissions/groups",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/permissions/groups/{code}",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/admin/permissions/groups/{code}",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/permissions/actions",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/permissions/actions/{code}",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/permissions/actions/{code}/impact",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/admin/permissions/actions/{code}",
+      "controller": "PolicyApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/workspaces",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/business-scopes",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/business-scopes",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/business-scopes/{id}",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/business-scopes/{id}/archive",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/workspaces/{id}/access",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/workspaces/{id}/dashboard",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/workspaces/{id}/dashboard",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/drafts",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/drafts",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/drafts/{id}",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/drafts/{id}",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/drafts/{id}/{command:save|cancel|archive|restore}",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/drafts/{id}/clone",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/assets",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/assets",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/assets/{id}/download",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/assets/{id}/archive",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/events",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/preferences/plan-popup/hide",
+      "controller": "WorkspaceApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/oauth2/start/{provider}",
+      "controller": "SocialStartController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/members/{id}",
+      "controller": "MemberApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/members/{id}",
+      "controller": "MemberApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/workspaces/{id}/tier",
+      "controller": "MemberApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/workspaces/{id}/tier/history",
+      "controller": "MemberApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/verification",
+      "controller": "AuthApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/verification/{id}/confirm",
+      "controller": "AuthApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/signup",
+      "controller": "AuthApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/recovery",
+      "controller": "AuthApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/password/reset",
+      "controller": "AuthApiController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/login",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/signup",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/recovery",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/password/reset",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/terms",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/privacy",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/signup/social-existing",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/signup/social-existing",
+      "controller": "AuthPageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard",
+      "controller": "WorkspacePageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/work/new",
+      "controller": "WorkspacePageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/work/drafts/{id}",
+      "controller": "WorkspacePageController",
+      "status": "CODE_NOT_RUNTIME_VERIFIED"
+    }
+  ],
+  "historical_snapshot": "v0.2.0: preserved prior API/action/static-check record; current contract is API_v0.3.0.json and current execution results are TEST_REPORT.txt"
+}

@@ -1,0 +1,60 @@
+package com.axplatform.ai;
+
+import java.util.*;
+import com.axplatform.sheet.SheetRules;
+
+/** Pure allowlist validation. Provider JSON is untrusted input, even with strict JSON Schema. */
+public final class ProposalRules {
+    public static final List<String> FIELDS=List.of("purpose","data","result","details","audience");
+    private ProposalRules(){}
+    public static Map<String,Object> normalize(Map<String,Object> input,String workflow){
+        exact(input,Set.of("summary","confirmed","assumptions","questions","draft","sheet","warnings","ready"));
+        var out=new LinkedHashMap<String,Object>();
+        out.put("summary",string(input.get("summary"),2000,true));
+        out.put("confirmed",lines(input.get("confirmed"),20,1000));
+        out.put("assumptions",lines(input.get("assumptions"),20,1000));
+        if(!(input.get("questions") instanceof List<?> questions)||questions.size()>8)throw bad("확인 질문은 최대 8개입니다.");
+        List<Map<String,Object>> normalized=new ArrayList<>();Set<String> ids=new HashSet<>();
+        for(Object value:questions){
+            Map<String,Object> q=object(value);exact(q,Set.of("id","field","title","reason","choices","recommended","required"));
+            String id=string(q.get("id"),60,true),field=string(q.get("field"),20,true);
+            if(!id.matches("[a-zA-Z0-9_-]{1,60}")||!ids.add(id)||!FIELDS.contains(field))throw bad("질문 참조를 확인해 주세요.");
+            List<String> choices=lines(q.get("choices"),8,500);String recommended=string(q.get("recommended"),500,false);
+            if(!recommended.isEmpty()&&!choices.contains(recommended))throw bad("추천 답변은 선택지에 포함되어야 합니다.");
+            if(!(q.get("required") instanceof Boolean required))throw bad("질문의 필수 여부를 확인해 주세요.");
+            normalized.add(Map.of("id",id,"field",field,"title",string(q.get("title"),300,true),"reason",string(q.get("reason"),1000,true),"choices",choices,"recommended",recommended,"required",required));
+        }
+        out.put("questions",normalized);
+        Map<String,Object> draft=object(input.get("draft"));exact(draft,Set.of("title","answers"));
+        Map<String,Object> answers=object(draft.get("answers"));exact(answers,new HashSet<>(FIELDS));
+        Map<String,Object> cleanAnswers=new LinkedHashMap<>();for(String field:FIELDS)cleanAnswers.put(field,string(answers.get(field),2000,false));
+        out.put("draft",Map.of("title",string(draft.get("title"),100,true),"answers",cleanAnswers));
+        Object sheet=input.get("sheet");
+        if(!"EXCEL".equals(workflow)&&sheet!=null)throw bad("현재 업무에서는 표 결과를 적용할 수 없습니다.");
+        try {
+            if(sheet==null)out.put("sheet",null);
+            else {
+                Map<String,Object> table=object(sheet);
+                // AI proposals must carry stable row identities; inventing UUIDs here breaks apply idempotency.
+                exact(table,Set.of("columns","rows","rowIds"));
+                out.put("sheet",SheetRules.normalize(table));
+            }
+        }
+        catch(RuntimeException invalid){throw bad("제안 표의 열·행·셀·식별자 형식을 확인해 주세요.");}
+        out.put("warnings",lines(input.get("warnings"),20,1000));
+        if(!(input.get("ready") instanceof Boolean ready))throw bad("제안 준비 상태를 확인해 주세요.");
+        if(ready&&normalized.stream().anyMatch(q->Boolean.TRUE.equals(q.get("required"))))throw bad("필수 확인 질문이 남은 제안은 준비 완료로 표시할 수 없습니다.");
+        out.put("ready",ready);return out;
+    }
+    @SuppressWarnings("unchecked") public static Map<String,Object> object(Object value){
+        if(!(value instanceof Map<?,?> map)||map.keySet().stream().anyMatch(k->!(k instanceof String)))throw bad("제안 자료 형식을 확인해 주세요.");
+        return (Map<String,Object>)map;
+    }
+    private static void exact(Map<String,Object> map,Set<String> keys){if(map==null||!map.keySet().equals(keys))throw bad("허용한 제안 항목과 일치하지 않습니다.");}
+    private static String string(Object value,int max,boolean required){
+        if(!(value instanceof String text)||text.length()>max||(required&&text.isBlank()))throw bad("제안 문자열 길이와 내용을 확인해 주세요.");
+        for(int at=0;at<text.length();){int cp=text.codePointAt(at);if(!(cp==9||cp==10||cp==13||(cp>=32&&cp<=0xd7ff)||(cp>=0xe000&&cp<=0xfffd)||(cp>=0x10000&&cp<=0x10ffff)))throw bad("제안 문자열에 저장할 수 없는 문자가 있습니다.");at+=Character.charCount(cp);}return text;
+    }
+    private static List<String> lines(Object input,int max,int length){if(!(input instanceof List<?> values)||values.size()>max)throw bad("제안 목록 수를 확인해 주세요.");List<String> out=new ArrayList<>();for(Object value:values)out.add(string(value,length,true));return out;}
+    private static IllegalArgumentException bad(String text){return new IllegalArgumentException(text);}
+}

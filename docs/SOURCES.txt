@@ -1,0 +1,79 @@
+공식 확인자료 / 2026-10-09
+확인한 공개문서의 내용과 실제계정·계약·실행결과를 구분합니다.
+버전 기준은 Spring Boot 4.1.1의 고정 BOM이며 직접의존성도 동일parent로관리합니다.
+
+S01 Spring Boot system requirements: Java17+,Maven3.6.3+,Framework7.0.9+. 공식stable4.1.1 표시.
+https://docs.spring.io/spring-boot/system-requirements.html
+S02 BOM coordinates: Security7.1.1,Thymeleaf3.1.5.RELEASE,Hibernate7.4.5.Final,MariaDBConnector/J3.5.10,H2test2.4.240,Jackson3.1.5.
+https://docs.spring.io/spring-boot/appendix/dependency-versions/coordinates.html
+S03 m2e issue2084: jar3.4.2→3.5.0에서동일scoping오류;3.4.2회귀후MavenUpdate로해결보고.
+사용자가3.5.1로확인한현상을회피하도록직접고정. Eclipse에서실제재현/해소시험은미실행.
+https://github.com/eclipse-m2e/m2e-core/issues/2084
+https://github.com/apache/maven-jar-plugin/issues/485
+S04 Boot4테스트설정/MockMvc패키지와SpringBootTest
+https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html
+S05 CSRF/PasswordEncoder: 세션form/fetch변경요청보호,서버encode/matches. 현재code실행검수와공식참고구분.
+https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html
+https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/password-encoder.html
+S06 MariaDB 현재유지중LTS:10.11/11.4등,Connector/J3.5계열Java17지원/LGPL.
+https://mariadb.org/mariadb-server-12-3-11-8-11-4-and-10-11-q3-2026-maintenance-releases-and-goodbye-10-6/
+https://mariadb.com/docs/connectors/mariadb-connector-j/about-mariadb-connector-j
+https://github.com/mariadb-corporation/mariadb-connector-j
+S07 ONLYOFFICE 편집임베딩·저장콜백,제품판별/SaaSDeveloper라이선스안내. 실제비용/계약/요구충족은미확인.
+https://api.onlyoffice.com/docs/docs-api/get-started/basic-concepts/
+https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/
+https://www.onlyoffice.com/compare-editions
+https://www.onlyoffice.com/developer-edition-prices
+S08 한컴웹한글/SDK공식제품안내. 실제HWP객체/Ubuntu/SaaS/동시처리/라이선스실증은미실행.
+https://developer.hancom.com/webhwp
+https://sdk.hancom.com/
+S09 OpenAI 공식문서:Responses구조화출력계약. 구조준수와사실성·권한·비용검증은별개. 실제model/계정접근미확인.
+https://developers.openai.com/api/docs/guides/structured-outputs
+S10 GoogleOIDC:sub로identity식별,profile정보와로그인보안검증. 실제앱/콜백미실행.
+https://developers.google.com/identity/openid-connect/openid-connect
+S11 Kakao로그인사전설정/동의항목;실앱권한승인미확인.
+https://developers.kakao.com/docs/ko/kakaologin/prerequisite
+S12 Naver프로필조회;response.id기준계정분리. 실앱미확인.
+https://developers.naver.com/docs/login/profile/profile.md
+S13 Cafe24SMS/알림톡설정, SOLAPI개발자안내;실계정/발신번호/템플릿/비용/발송미확인.
+https://help.cafe24.com/docs/business-tools/kakao-notification/kakao-sms-setup-management-guide/
+https://solapi.com/developers/api
+S14 Toss자동결제공식안내. 실계약/키/청구/웹훅미실행.
+https://docs.tosspayments.com/guides/v2/billing/integration
+S15 ApachePOI라이선스Apache2.0. 아직현재pom에추가하지않았으며P2파일엔진후보.
+https://poi.apache.org/legal.html
+
+비교서비스의공식기능사실/제품가설(해당사이트의불가능성·우월성을주장하지않음)
+S16 미리캔버스공식표가이드:표선택후행/열/셀스타일/크기정밀설정과드래그/숫자입력안내.
+https://help.miricanvas.com/hc/ko/articles/360032510531
+S17 Canva공식group/layer/align도움말을열었으나공개추출에서세부조작내용을충분히확인하지못함.
+따라서구체적인동작/요금조건은기정사실로쓰지않음.
+https://www.canva.com/help/layer-group-align/
+S18 HubSpot공식record설정:카드/탭/속성으로보여줄내용구성. Ax의CRM구조/레코드/보기분리의참고사실.
+https://knowledge.hubspot.com/object-settings/customize-records
+S19 monday고급필터공식안내:조건그룹/필터설정. Ax조건시험/정밀설정목표의참고사실.
+https://support.monday.com/hc/en-us/articles/25722908508946-Advanced-board-filters
+AxPlatform의개선가설:업무메뉴에서질문/작은미리보기로시작하고대상선택후정밀값을설정하며내양식으로반복.
+이흐름이대상초보고객의질문/설정탐색/반복시간을줄이는지는P7동일자료과제로측정해야함.
+
+주요 의존성 라이선스표(전체 전이의존 SBOM은 Maven 빌드 후 확정)
+SpringBoot/Framework/Security/Thymeleaf:Apache2.0. Hibernate ORM 7.4:Apache2.0. MariaDBConnector:LGPL2.1-or-later.
+Hibernate ORM은 7.0.0.Beta5 이후 Apache2.0으로 변경됨: https://hibernate.org/community/license/
+H2 라이선스 근거: https://h2database.github.io/html/license.html
+Thymeleaf 라이선스 근거: https://www.thymeleaf.org/faq.html
+JUnit:시험전용EPL2.0. H2:시험전용MPL2.0/EPL1.0. 실제배포때전이의존LICENSE/NOTICE포함검증필요.
+현재ZIP은작성한소스/문서만포함하며외부jar/엔진/vendor배포본을포함하지않습니다.
+현재기본브라우저JS/CSS는직접작성/로컬자원,CDN없음. 공급자엔진JS는후속계약확인전포함하지않습니다.
+
+0.2.0 구현 참고 (공식 문서, 2026-10-09 조회)
+https://docs.spring.io/spring-boot/reference/using/build-systems.html
+https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
+https://docs.spring.io/spring-security/reference/servlet/oauth2/login/index.html
+https://docs.spring.io/spring-framework/reference/integration/email.html
+https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html
+https://developers.google.com/identity/openid-connect/openid-connect
+https://developers.kakao.com/docs/ko/kakaologin/prerequisite
+https://developers.kakao.com/docs/ko/kakaologin/rest-api
+https://developers.naver.com/docs/login/api/api.md
+https://solapi.com/developers/api/messages
+https://developers.solapi.com/references/authentication

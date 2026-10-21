@@ -1,0 +1,48 @@
+{
+  "engine": "MariaDB 10.11.14 Ubuntu core binary",
+  "mode": "isolated scratch datadir --bootstrap, --skip-networking, no user/external database connection",
+  "socket_runtime": "NOT_RUN: container denies UNIX socket creation; JDBC/HeidiSQL connectivity not exercised",
+  "checks": [
+    {
+      "test": "fresh_01_03_then_V003_actual_engine_exit0",
+      "pass": true
+    },
+    {
+      "test": "all_33_table_default_collations_explicit_unicode_ci",
+      "pass": true
+    },
+    {
+      "test": "rerun_preserves_accounts_drafts_sheets_runs_policy_grants_admin_edits",
+      "pass": true
+    },
+    {
+      "test": "verify_V003_actual_engine_exit0",
+      "pass": true
+    },
+    {
+      "test": "unique_same_account_request_key",
+      "pass": true
+    },
+    {
+      "test": "composite_business_fk_rejects_foreign_scope",
+      "pass": true
+    },
+    {
+      "test": "status_check_rejects_unknown_status",
+      "pass": true
+    },
+    {
+      "test": "missing_required_column_prevents_migration_marker",
+      "pass": true
+    },
+    {
+      "test": "correct_schema_allows_migration_marker",
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "files": {
+    "db/manual/06_V003__ai_and_sheet.sql": "65b31331f57e229e94eb7f49daf7d1d919e3b3a210cd022249e2371166f61ffc",
+    "db/manual/07_VERIFY_V003.sql": "2279a3abdda354496f31a450048648daf80b572a426b90ebee4d7c22d43497bf"
+  }
+}

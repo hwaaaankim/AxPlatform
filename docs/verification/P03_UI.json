@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "assertions": 237,
+  "modulesParsed": 4,
+  "browser": "NOT_RUN",
+  "actualOpenAi": "NOT_RUN",
+  "reports": [
+    "ui-widget-result.json",
+    "ui-guide-result.json",
+    "ui-ai-result.json",
+    "ui-core-result.json"
+  ]
+}

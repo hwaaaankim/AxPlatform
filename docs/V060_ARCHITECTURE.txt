@@ -1,0 +1,56 @@
+AxPlatform 0.6.0 개발 정의 추가 개정
+
+기준
+기획안 v1.6.2, 마스터 프롬프트 v1.7, 0.5.0 파일·운영 공통 기반, 0.5.1 진단·너비 개선 위에 적용합니다.
+이번 범위는 엑셀의 다중 시트와 입력/검토/저장/분석 연결입니다. 다른 여섯 업무의 결과 엔진 완료를 뜻하지 않습니다.
+향후 요구에는 AxPlatform_개발마스터프롬프트_v1.8.txt를 함께 사용합니다.
+
+계층과 저장 계약
+회원 → Workspace → 사업 → 업무 종류 → 프로젝트(ap_work_draft) → 시트.
+프로젝트당 ap_sheet 한 행을 유지하고 content_json 안에 format=AX_WORKBOOK_1, activeSheetId, sheets를 보관합니다.
+각 시트는 id, name, data(columns/rows/rowIds), sourceAssetIds를 가집니다.
+이름 변경·순서 이동과 무관하게 시트 ID가 유지됩니다. 분석 보기와 AI 대상은 이름이 아닌 이 ID를 사용합니다.
+기존 columns/rows/rowIds JSON은 sheet1/시트1로 읽습니다. 별도의 데이터 일괄 변환 SQL은 없습니다.
+모든 시트를 한 저장본으로 묶고 프로젝트 버전과 통합문서 버전을 함께 검사합니다.
+동시 저장 또는 다른 시트의 변경이 있어도 오래된 AI 제안이 최신 저장본을 덮어쓰지 않습니다.
+previous_json은 통합문서 전체의 한 단계 되돌리기입니다. 빈 양식 복제는 모든 시트의 열·계산 정의를 유지하고 행·원본 참조를 비웁니다.
+
+권한
+시트 추가/이름/순서/원본 연결 변경은 기존 schema.update, 삭제는 schema.update와 rows.delete를 검사합니다.
+열·행·셀·계산의 실제 변경도 기존 SheetRules diff 권한을 별도로 검사합니다.
+다중 시트 AI 적용은 선택한 모든 시트 검증이 성공한 경우에만 같은 트랜잭션에서 저장합니다.
+버전·권한·검증 실패 시 프로젝트 제목/답변/시트를 부분 저장하지 않습니다.
+기존에 저장된 원본 ID는 출처 정보입니다. 삭제·연결 해제 후에도 셀 저장을 막지 않습니다.
+새 원본 ID 연결은 현재 프로젝트 첨부여야 하며, 실제 원본 읽기·AI 요청마다 소유자/사업/작업·파일 상태를 재검사합니다.
+
+API 확장
+GET /api/drafts/{id}/sheet: workbook과 현재 시트 sheet를 함께 반환합니다.
+PATCH /api/drafts/{id}/workbook: workbook, version, draftVersion으로 전체 시트를 저장합니다.
+기존 단일 sheet PATCH는 한 시트 프로젝트에만 적용합니다. 다중 시트에서 대상을 생략한 교체는 거부합니다.
+POST /api/sheets/workbook-preview: 저장된 원본 assetId로 모든 시트를 검사합니다.
+  시트별 status(READY/EMPTY/BLOCKED), visibility, headers, rows, warnings, issues(code/severity/message/remedy)를 반환합니다.
+POST /api/drafts/{id}/ai-runs: 단일 targetSheetId 또는 사진별 photoSheetIds와 대응하는 assetIds를 사용합니다.
+POST /api/ai-runs/{id}/apply-sheets: sheetIds와 검토 확인·기준 버전·멱등 키로 준비된 시트만 원자적으로 적용합니다.
+분석 config에 sheetId를 저장합니다. 기존 보기는 sheet1을 사용하고 대상 삭제 시 다른 시트로 자동 대체하지 않습니다.
+
+사진별 AI 처리
+사진 하나당 원본 ID 하나를 가진 시트를 준비합니다. 서버가 시트-사진 대응과 작업 첨부를 다시 확인합니다.
+한 요청 안에서 사진별로 순차 실행하며 각 호출은 그 사진 하나와 지정 시트만 읽습니다.
+요청 전체의 기존 시간 한도를 공유하고 각 생성 호출 전에 기존 입력 토큰 사전 계산·예약을 수행합니다.
+ap_ai_call.round_no는 사진 순번 × 최대 도구 라운드 + 현재 라운드로 분리하여 UNIQUE 충돌과 사용량 누락을 방지합니다.
+응답 usage는 기존 AiMeteringService에서 즉시 합산합니다. 실패/중단도 기존 미확인 비용 정책을 유지합니다.
+개별 이미지 손상·확인 질문은 시트별 결과로 남깁니다. 인증·예산·연결 등의 공통 실패는 후속 생성 요청을 멈춥니다.
+중단 중 확정되지 않은 시트는 완료된 것으로 표시하지 않습니다. 성공 제안도 직접 확인·선택 적용 전에는 저장 셀을 바꾸지 않습니다.
+AI가 사진에서 관찰한 문제와 서버/파일 형식 검사 결과는 구분합니다. 판독이 어렵다는 이유만으로 숫자를 만들어 채우지 않도록 제안 규칙을 강화했습니다.
+
+파일/운영 공통 기반 재사용
+사진·엑셀 원본은 기존 AssetService/ManagedStorage에 PHOTO/IMPORT 용도로 보관합니다.
+시트마다 원본을 중복 저장하거나 임의 로컬 경로로 우회하지 않습니다.
+출력 XLSX는 모든 시트를 포함하며 기존 OUTPUT 보관과 관리자 파일·경로/용량 관리에 연결됩니다.
+활동 이벤트는 기존 프로젝트 단위 sheet.updated / sheet.undone / ai.queued / ai.ready / ai.failed / ai.applied를 사용합니다.
+원문 프롬프트·사진·셀 내용·키를 활동 분석 로그에 넣지 않습니다.
+다른 업무 확장 시에도 소유 범위, 원본 자료 연결, 서버 확정 버전, 검토 후 선택 적용, 오류별 해결 안내, 사용량 예약 계약을 재사용합니다.
+
+남은 범위
+Excel 전체 호환 편집기, 임의 함수·시트 간 계산, 차트 객체 복원, 대용량 및 자유 셀 배치, 여러 단계 버전 이력은 별도 개발 범위입니다.
+기존 P2 잔여·P3~P7의 업무 엔진과 실제 고객/외부 연동/운영 부하 검수는 이전 개발 정의를 유지합니다.

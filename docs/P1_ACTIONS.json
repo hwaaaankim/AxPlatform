@@ -1,0 +1,3041 @@
+[
+  {
+    "code": "workspace.scope.read",
+    "label": "사업 목록 조회",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.scope.read",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.scope.create",
+    "label": "사업 만들기",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.scope.create",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.scope.update",
+    "label": "사업 이름 수정",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.scope.update",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.scope.archive",
+    "label": "사업 보관·복원",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.scope.archive",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.dashboard.read",
+    "label": "업무 홈 조회",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.dashboard.read",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.dashboard.manage",
+    "label": "홈 구성 저장",
+    "stage": "P1",
+    "dependencies": [
+      "workspace.dashboard.read"
+    ],
+    "binding": "workspace.dashboard.manage",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.events.read",
+    "label": "변경 알림 구독",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.events.read",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.list",
+    "label": "업무 초안 목록",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.draft.list",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.read",
+    "label": "업무 초안 상세",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.draft.read",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.create",
+    "label": "업무 초안 만들기",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.draft.create",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.update",
+    "label": "답변 수정",
+    "stage": "P1",
+    "dependencies": [
+      "workspace.draft.read"
+    ],
+    "binding": "workspace.draft.update",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.save",
+    "label": "업무 초안 확정",
+    "stage": "P1",
+    "dependencies": [
+      "workspace.draft.read"
+    ],
+    "binding": "workspace.draft.save",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.archive",
+    "label": "업무 초안 보관",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.draft.archive",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.restore",
+    "label": "업무 초안 복원",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.draft.restore",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.asset.list",
+    "label": "첨부 목록 조회",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.asset.list",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.asset.upload",
+    "label": "이미지·텍스트 첨부",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.asset.upload",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.asset.download",
+    "label": "첨부 다운로드",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.asset.download",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.asset.archive",
+    "label": "첨부 보관",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.asset.archive",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "excel.overview.read",
+    "label": "오버뷰 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/overview",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.list.read",
+    "label": "목록 메타데이터 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.detail.read",
+    "label": "헤더·셀 상세 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.create.manual",
+    "label": "직접 생성",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/drafts/manual",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.create.chat",
+    "label": "채팅 생성",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/drafts/chat",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.create.photo",
+    "label": "사진 생성",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/drafts/photo",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.meta.update",
+    "label": "이름·설명 수정",
+    "stage": "P2",
+    "method": "PATCH",
+    "api": "/api/books/{id}/metadata",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.data.create",
+    "label": "데이터 행 추가",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.data.update",
+    "label": "데이터 값 수정",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.data.delete",
+    "label": "데이터 행 삭제",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.schema.update",
+    "label": "헤더·구조 변경",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.formula.manage",
+    "label": "수식 직접 설정/재계산",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/drafts/{draft}/formulas",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.formula.ai",
+    "label": "수식 AI 제안",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/formula-proposals",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.import.append",
+    "label": "추가 업로드",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/imports/{import}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.import.reset",
+    "label": "전체 교체 업로드",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/imports/{import}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.export.template",
+    "label": "빈 입력 양식 다운로드",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}/exports/template",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.export.data",
+    "label": "현재 데이터 다운로드",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}/exports/data",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.analysis.read",
+    "label": "저장 분석 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}/analysis-views/{view}",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.analysis.manage",
+    "label": "분석 보기 생성/수정/삭제",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/analysis-views",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.template.manage",
+    "label": "내 엑셀 양식 관리",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/templates",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.project.archive",
+    "label": "작업공간 보관/삭제",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/archive",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.project.restore",
+    "label": "작업공간/스냅샷 복구",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/restorations",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.create.file",
+    "label": "파일로 새 양식 생성",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/drafts/file",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.create.template",
+    "label": "내 양식으로 생성",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/drafts/template",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.data.photo",
+    "label": "기존 자료에 사진 후보 추가",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/photo-imports",
+    "dependencies": [
+      "excel.data.create"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.data.copy",
+    "label": "데이터 명시 복제",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/data-copies",
+    "dependencies": [
+      "excel.data.create"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.project.duplicate",
+    "label": "양식/작업공간 구조 복제",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/duplicates",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.version.read",
+    "label": "확정·스냅샷 이력 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}/versions",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.resource.read",
+    "label": "원본 사진 조회",
+    "stage": "P2",
+    "method": "GET",
+    "api": "/api/books/{id}/assets/{asset}",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.resource.manage",
+    "label": "원본 자료 연결 관리",
+    "stage": "P2",
+    "method": "POST",
+    "api": "/api/books/{id}/assets",
+    "dependencies": [
+      "excel.detail.read"
+    ],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "excel.dashboard.manage",
+    "label": "개별 대시보드 위젯 관리",
+    "stage": "P2",
+    "method": "PATCH",
+    "api": "/api/books/{id}/dashboard",
+    "dependencies": [],
+    "state": "PLANNED_P2",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "apply는 실제 각 operation 권한 합집합 검사; 목록은 cell/asset URL 제외"
+  },
+  {
+    "code": "word.overview.read",
+    "label": "WORD 오버뷰",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/word/overview",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.list.read",
+    "label": "WORD 목록",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/word",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.detail.read",
+    "label": "WORD 문서 상세",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/word/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.create.manual",
+    "label": "WORD 직접 작성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/drafts/manual",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.create.chat",
+    "label": "WORD 채팅 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/drafts/chat",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.create.photo",
+    "label": "WORD 사진 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/drafts/photo",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.create.file",
+    "label": "WORD 원본 파일 가져오기",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/drafts/file",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.create.template",
+    "label": "WORD 내 양식 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/drafts/template",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.meta.update",
+    "label": "WORD 이름 설명",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/word/{id}/metadata",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.content.update",
+    "label": "WORD 글·문단 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.object.create",
+    "label": "WORD 표·도형·이미지 삽입",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.object.update",
+    "label": "WORD 객체 속성 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.object.delete",
+    "label": "WORD 객체 삭제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.edit.ai",
+    "label": "WORD 선택 AI 변경 제안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/proposals",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.version.read",
+    "label": "WORD 버전 이력",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/word/{id}/versions",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.version.restore",
+    "label": "WORD 과거 버전으로 새 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/restorations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.export.native",
+    "label": "WORD 원본 형식 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/exports/native",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.export.pdf",
+    "label": "WORD PDF 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/exports/pdf",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.template.manage",
+    "label": "WORD 내 양식 관리",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/templates",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.resource.read",
+    "label": "WORD 리소스/사용 위치 조회",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/word/{id}/resources",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.resource.create",
+    "label": "WORD 리소스 추가",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/resources",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.resource.update",
+    "label": "WORD 리소스 교체",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/word/{id}/resources/{asset}",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.resource.delete",
+    "label": "WORD 리소스 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/word/{id}/resources/{asset}",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.layout.manage",
+    "label": "WORD 레이아웃 적용",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/drafts/{draft}/layouts",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.data.link",
+    "label": "WORD 자료 스냅샷 연결",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/data-links",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.data.refresh",
+    "label": "WORD 연결 자료 갱신 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/data-links/{link}/refresh",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.project.archive",
+    "label": "WORD 보관",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/archive",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.project.delete",
+    "label": "WORD 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/word/{id}",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.project.restore",
+    "label": "WORD 보관 복원",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/restorations",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "word.project.duplicate",
+    "label": "WORD 구조 복제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/word/{id}/duplicates",
+    "dependencies": [
+      "word.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.overview.read",
+    "label": "HWP 오버뷰",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/hwp/overview",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.list.read",
+    "label": "HWP 목록",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/hwp",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.detail.read",
+    "label": "HWP 문서 상세",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/hwp/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.create.manual",
+    "label": "HWP 직접 작성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/drafts/manual",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.create.chat",
+    "label": "HWP 채팅 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/drafts/chat",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.create.photo",
+    "label": "HWP 사진 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/drafts/photo",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.create.file",
+    "label": "HWP 원본 파일 가져오기",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/drafts/file",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.create.template",
+    "label": "HWP 내 양식 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/drafts/template",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.meta.update",
+    "label": "HWP 이름 설명",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/hwp/{id}/metadata",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.content.update",
+    "label": "HWP 글·문단 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.object.create",
+    "label": "HWP 표·도형·이미지 삽입",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.object.update",
+    "label": "HWP 객체 속성 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.object.delete",
+    "label": "HWP 객체 삭제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.edit.ai",
+    "label": "HWP 선택 AI 변경 제안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/proposals",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.version.read",
+    "label": "HWP 버전 이력",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/hwp/{id}/versions",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.version.restore",
+    "label": "HWP 과거 버전으로 새 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/restorations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.export.native",
+    "label": "HWP 원본 형식 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/exports/native",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.export.pdf",
+    "label": "HWP PDF 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/exports/pdf",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.template.manage",
+    "label": "HWP 내 양식 관리",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/templates",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.resource.read",
+    "label": "HWP 리소스/사용 위치 조회",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/hwp/{id}/resources",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.resource.create",
+    "label": "HWP 리소스 추가",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/resources",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.resource.update",
+    "label": "HWP 리소스 교체",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/hwp/{id}/resources/{asset}",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.resource.delete",
+    "label": "HWP 리소스 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/hwp/{id}/resources/{asset}",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.layout.manage",
+    "label": "HWP 레이아웃 적용",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/drafts/{draft}/layouts",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.data.link",
+    "label": "HWP 자료 스냅샷 연결",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/data-links",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.data.refresh",
+    "label": "HWP 연결 자료 갱신 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/data-links/{link}/refresh",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.project.archive",
+    "label": "HWP 보관",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/archive",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.project.delete",
+    "label": "HWP 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/hwp/{id}",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.project.restore",
+    "label": "HWP 보관 복원",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/restorations",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "hwp.project.duplicate",
+    "label": "HWP 구조 복제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/hwp/{id}/duplicates",
+    "dependencies": [
+      "hwp.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.overview.read",
+    "label": "PPT 오버뷰",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/ppt/overview",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.list.read",
+    "label": "PPT 목록",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/ppt",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.detail.read",
+    "label": "PPT 문서 상세",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/ppt/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.create.manual",
+    "label": "PPT 직접 작성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/drafts/manual",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.create.chat",
+    "label": "PPT 채팅 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/drafts/chat",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.create.photo",
+    "label": "PPT 사진 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/drafts/photo",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.create.file",
+    "label": "PPT 원본 파일 가져오기",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/drafts/file",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.create.template",
+    "label": "PPT 내 양식 생성",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/drafts/template",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.meta.update",
+    "label": "PPT 이름 설명",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/ppt/{id}/metadata",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.content.update",
+    "label": "PPT 글·문단 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.object.create",
+    "label": "PPT 표·도형·이미지 삽입",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.object.update",
+    "label": "PPT 객체 속성 직접 수정",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.object.delete",
+    "label": "PPT 객체 삭제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.edit.ai",
+    "label": "PPT 선택 AI 변경 제안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/proposals",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.version.read",
+    "label": "PPT 버전 이력",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/ppt/{id}/versions",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.version.restore",
+    "label": "PPT 과거 버전으로 새 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/restorations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.export.native",
+    "label": "PPT 원본 형식 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/exports/native",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.export.pdf",
+    "label": "PPT PDF 출력",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/exports/pdf",
+    "dependencies": [],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.template.manage",
+    "label": "PPT 내 양식 관리",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/templates",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.resource.read",
+    "label": "PPT 리소스/사용 위치 조회",
+    "stage": "P4",
+    "method": "GET",
+    "api": "/api/documents/ppt/{id}/resources",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.resource.create",
+    "label": "PPT 리소스 추가",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/resources",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.resource.update",
+    "label": "PPT 리소스 교체",
+    "stage": "P4",
+    "method": "PATCH",
+    "api": "/api/documents/ppt/{id}/resources/{asset}",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.resource.delete",
+    "label": "PPT 리소스 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/ppt/{id}/resources/{asset}",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.layout.manage",
+    "label": "PPT 레이아웃 적용",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/drafts/{draft}/layouts",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.data.link",
+    "label": "PPT 자료 스냅샷 연결",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/data-links",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.data.refresh",
+    "label": "PPT 연결 자료 갱신 초안",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/data-links/{link}/refresh",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.project.archive",
+    "label": "PPT 보관",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/archive",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.project.delete",
+    "label": "PPT 삭제",
+    "stage": "P4",
+    "method": "DELETE",
+    "api": "/api/documents/ppt/{id}",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.project.restore",
+    "label": "PPT 보관 복원",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/restorations",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "ppt.project.duplicate",
+    "label": "PPT 구조 복제",
+    "stage": "P4",
+    "method": "POST",
+    "api": "/api/documents/ppt/{id}/duplicates",
+    "dependencies": [
+      "ppt.detail.read"
+    ],
+    "state": "PLANNED_P4",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "AI 반영에는 실제명령권한별도; 포맷별원본/엔진활성검사"
+  },
+  {
+    "code": "crm.overview.read",
+    "label": "전체오버뷰",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/overview",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.list.read",
+    "label": "CRM목록",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.detail.read",
+    "label": "CRM설정·현황",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.create.manual",
+    "label": "직접CRM생성",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/drafts/manual",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.create.chat",
+    "label": "질문CRM생성",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/drafts/chat",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.create.photo",
+    "label": "사진CRM생성",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/drafts/photo",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.create.template",
+    "label": "양식CRM생성",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/drafts/template",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.meta.update",
+    "label": "CRM이름수정",
+    "stage": "P3",
+    "method": "PATCH",
+    "api": "/api/crms/{id}/metadata",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.schema.update",
+    "label": "항목구조변경",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/schema-drafts/{draft}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.schema.ai",
+    "label": "AI구조제안",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/schema-proposals",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.list.read",
+    "label": "고객목록",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}/records",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.detail.read",
+    "label": "고객상세·연락처",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}/records/{record}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.create",
+    "label": "고객등록",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/records",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.update",
+    "label": "고객수정",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/records/{record}/versions",
+    "dependencies": [
+      "crm.record.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.delete",
+    "label": "고객삭제",
+    "stage": "P3",
+    "method": "DELETE",
+    "api": "/api/crms/{id}/records/{record}",
+    "dependencies": [
+      "crm.record.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.ai",
+    "label": "AI고객변경제안",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/record-proposals",
+    "dependencies": [
+      "crm.record.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.record.photo",
+    "label": "사진고객후보",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/photo-imports",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.view.read",
+    "label": "저장보기조회",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}/views/{view}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.view.manage",
+    "label": "보기생성/수정/삭제",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/views",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.import.append",
+    "label": "추가가져오기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/imports/{import}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.import.update",
+    "label": "명시갱신가져오기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/imports/{import}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.import.reset",
+    "label": "전체교체가져오기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/imports/{import}/apply",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.export.data",
+    "label": "고객내보내기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/exports/data",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.analysis.read",
+    "label": "분석조회",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}/analysis-views/{view}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.analysis.manage",
+    "label": "분석관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/analysis-views",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.template.manage",
+    "label": "CRM내양식",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/templates",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.partner.link",
+    "label": "공통거래처연결",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/records/{record}/partner-links",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.attachment.read",
+    "label": "고객첨부조회",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/crms/{id}/records/{record}/assets/{asset}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.attachment.manage",
+    "label": "고객첨부관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/records/{record}/assets",
+    "dependencies": [
+      "crm.record.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.project.archive",
+    "label": "CRM보관",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/archive",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.project.delete",
+    "label": "CRM삭제",
+    "stage": "P3",
+    "method": "DELETE",
+    "api": "/api/crms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.project.restore",
+    "label": "CRM복원",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/restorations",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "crm.project.duplicate",
+    "label": "CRM구조복제",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/crms/{id}/duplicates",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "구조/고객/보기범위독립; 실제갱신/삽입/삭제추가 권한합집합"
+  },
+  {
+    "code": "calendar.overview.read",
+    "label": "일정현황",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/calendar/overview",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.list.read",
+    "label": "달력/목록",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/calendar/events",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.detail.read",
+    "label": "일정상세",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/calendar/events/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.create",
+    "label": "직접일정생성",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.update",
+    "label": "일정수정/드래그",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events/{id}/versions",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.delete",
+    "label": "일정삭제",
+    "stage": "P3",
+    "method": "DELETE",
+    "api": "/api/calendar/events/{id}",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.ai.create",
+    "label": "AI일정생성후보",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/drafts/chat",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.ai.update",
+    "label": "AI일정수정후보",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events/{id}/proposals",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.event.photo",
+    "label": "사진일정후보",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/drafts/photo",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.recurrence.manage",
+    "label": "반복·예외관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events/{id}/recurrence",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.reminder.manage",
+    "label": "알림계획관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events/{id}/reminders",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.partner.read",
+    "label": "거래처조회",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/calendar/partners",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.partner.create",
+    "label": "거래처등록",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/partners",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.partner.update",
+    "label": "거래처수정",
+    "stage": "P3",
+    "method": "PATCH",
+    "api": "/api/calendar/partners/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.attachment.read",
+    "label": "일정첨부읽기",
+    "stage": "P3",
+    "method": "GET",
+    "api": "/api/calendar/events/{id}/assets/{asset}",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.attachment.manage",
+    "label": "일정첨부관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/events/{id}/assets",
+    "dependencies": [
+      "calendar.detail.read"
+    ],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.import.manage",
+    "label": "일정가져오기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/imports",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.export.data",
+    "label": "일정내보내기",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/exports",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.view.manage",
+    "label": "일정보기관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/views",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "calendar.template.manage",
+    "label": "일정양식관리",
+    "stage": "P3",
+    "method": "POST",
+    "api": "/api/calendar/templates",
+    "dependencies": [],
+    "state": "PLANNED_P3",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "반복이번/이후/전체·연결거래처·알림서버검증; 발송별도 권한"
+  },
+  {
+    "code": "app.overview.read",
+    "label": "앱오버뷰",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects/overview",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.list.read",
+    "label": "앱목록",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.detail.read",
+    "label": "부품·상세",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.create.manual",
+    "label": "부품직접생성",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/drafts/manual",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.create.chat",
+    "label": "질문생성",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/drafts/chat",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.create.photo",
+    "label": "사진생성",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/drafts/photo",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.create.template",
+    "label": "양식생성",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/drafts/template",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.meta.update",
+    "label": "앱이름변경",
+    "stage": "P6",
+    "method": "PATCH",
+    "api": "/api/app-projects/{id}/metadata",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.component.create",
+    "label": "부품추가",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.component.update",
+    "label": "부품수정/순서",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.component.delete",
+    "label": "부품삭제",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/drafts/{draft}/operations",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.edit.ai",
+    "label": "AI부품제안",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/proposals",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.trial.execute",
+    "label": "샌드박스시험",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/trials",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.version.create",
+    "label": "불변V1/V2저장",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/versions",
+    "dependencies": [
+      "app.detail.read"
+    ],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.version.read",
+    "label": "버전목록/차이",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects/{id}/versions",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.version.restore",
+    "label": "이전설정새초안",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/restorations",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.build.execute",
+    "label": "격리빌드/재시도",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/versions/{version}/builds",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.package.download",
+    "label": "버전패키지다운로드",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects/{id}/versions/{version}/packages/{package}",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.deployment.activate",
+    "label": "운영활성화",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/deployments",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.deployment.stop",
+    "label": "활성중지",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/deployments/{deployment}/stop",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.read",
+    "label": "실행데이터읽기",
+    "stage": "P6",
+    "method": "GET",
+    "api": "/api/app-projects/{id}/records",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.create",
+    "label": "실행데이터등록",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/records",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.update",
+    "label": "실행데이터수정",
+    "stage": "P6",
+    "method": "PATCH",
+    "api": "/api/app-projects/{id}/records/{record}",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.delete",
+    "label": "실행데이터삭제",
+    "stage": "P6",
+    "method": "DELETE",
+    "api": "/api/app-projects/{id}/records/{record}",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.export",
+    "label": "실행데이터출력",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/exports",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.data.restore",
+    "label": "업무데이터복구",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/data-restorations",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.template.manage",
+    "label": "앱양식관리",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/templates",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.project.archive",
+    "label": "앱보관",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/archive",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.project.delete",
+    "label": "앱삭제",
+    "stage": "P6",
+    "method": "DELETE",
+    "api": "/api/app-projects/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.project.restore",
+    "label": "앱복원",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/restorations",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "app.project.duplicate",
+    "label": "앱구조복제",
+    "stage": "P6",
+    "method": "POST",
+    "api": "/api/app-projects/{id}/duplicates",
+    "dependencies": [],
+    "state": "PLANNED_P6",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "버전 저장/다운로드/활성화/데이터복구는독립; 실제명령권한추가"
+  },
+  {
+    "code": "connection.gmail.read",
+    "label": "gmail 상태조회",
+    "stage": "P5",
+    "method": "GET",
+    "api": "/api/connections/gmail",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.gmail.create",
+    "label": "gmail 연결",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/gmail",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.gmail.update",
+    "label": "gmail 연결교체",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/connections/gmail/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.gmail.delete",
+    "label": "gmail 해제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/connections/gmail/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.gmail.test",
+    "label": "gmail 연결시험",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/gmail/{id}/tests",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "message.gmail.send",
+    "label": "gmail 단발발송",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/messages/gmail/deliveries",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "수신동의/대상/본문version/첨부/건수/비용실행확인"
+  },
+  {
+    "code": "message.gmail.automation.create",
+    "label": "gmail 예약규칙생성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/gmail",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.gmail.automation.update",
+    "label": "gmail 예약규칙수정",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/automations/gmail/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.gmail.automation.delete",
+    "label": "gmail 예약규칙삭제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/automations/gmail/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.gmail.automation.activate",
+    "label": "gmail 예약활성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/gmail/{id}/activate",
+    "dependencies": [
+      "message.gmail.send"
+    ],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.gmail.automation.stop",
+    "label": "gmail 예약중지",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/gmail/{id}/stop",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "connection.sms.read",
+    "label": "sms 상태조회",
+    "stage": "P5",
+    "method": "GET",
+    "api": "/api/connections/sms",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.sms.create",
+    "label": "sms 연결",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/sms",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.sms.update",
+    "label": "sms 연결교체",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/connections/sms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.sms.delete",
+    "label": "sms 해제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/connections/sms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.sms.test",
+    "label": "sms 연결시험",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/sms/{id}/tests",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "message.sms.send",
+    "label": "sms 단발발송",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/messages/sms/deliveries",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "수신동의/대상/본문version/첨부/건수/비용실행확인"
+  },
+  {
+    "code": "message.sms.automation.create",
+    "label": "sms 예약규칙생성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/sms",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.sms.automation.update",
+    "label": "sms 예약규칙수정",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/automations/sms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.sms.automation.delete",
+    "label": "sms 예약규칙삭제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/automations/sms/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.sms.automation.activate",
+    "label": "sms 예약활성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/sms/{id}/activate",
+    "dependencies": [
+      "message.sms.send"
+    ],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.sms.automation.stop",
+    "label": "sms 예약중지",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/sms/{id}/stop",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "connection.kakao.read",
+    "label": "kakao 상태조회",
+    "stage": "P5",
+    "method": "GET",
+    "api": "/api/connections/kakao",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.kakao.create",
+    "label": "kakao 연결",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/kakao",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.kakao.update",
+    "label": "kakao 연결교체",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/connections/kakao/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.kakao.delete",
+    "label": "kakao 해제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/connections/kakao/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "connection.kakao.test",
+    "label": "kakao 연결시험",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/connections/kakao/{id}/tests",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "연결은발송권한아님"
+  },
+  {
+    "code": "message.kakao.send",
+    "label": "kakao 단발발송",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/messages/kakao/deliveries",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "수신동의/대상/본문version/첨부/건수/비용실행확인"
+  },
+  {
+    "code": "message.kakao.automation.create",
+    "label": "kakao 예약규칙생성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/kakao",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.kakao.automation.update",
+    "label": "kakao 예약규칙수정",
+    "stage": "P5",
+    "method": "PATCH",
+    "api": "/api/automations/kakao/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.kakao.automation.delete",
+    "label": "kakao 예약규칙삭제",
+    "stage": "P5",
+    "method": "DELETE",
+    "api": "/api/automations/kakao/{id}",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.kakao.automation.activate",
+    "label": "kakao 예약활성",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/kakao/{id}/activate",
+    "dependencies": [
+      "message.kakao.send"
+    ],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "message.kakao.automation.stop",
+    "label": "kakao 예약중지",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/automations/kakao/{id}/stop",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": "활성/직전발송시실제행동권한재검사"
+  },
+  {
+    "code": "workspace.billing.read",
+    "label": "본인구독조회",
+    "stage": "P5",
+    "method": "GET",
+    "api": "/api/subscriptions/current",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": ""
+  },
+  {
+    "code": "workspace.billing.manage",
+    "label": "본인구독변경",
+    "stage": "P5",
+    "method": "POST",
+    "api": "/api/subscriptions/changes",
+    "dependencies": [],
+    "state": "PLANNED_P5",
+    "binding": "후속 서버 행동에 명시 연결; 현재 미연결/배정불가",
+    "note": ""
+  },
+  {
+    "code": "workspace.draft.cancel",
+    "label": "초안 변경 취소",
+    "stage": "P1",
+    "dependencies": [
+      "workspace.draft.update"
+    ],
+    "binding": "workspace.draft.cancel",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.draft.clone",
+    "label": "업무 초안 복제",
+    "stage": "P1",
+    "dependencies": [
+      "workspace.draft.read",
+      "workspace.draft.create"
+    ],
+    "binding": "workspace.draft.clone",
+    "state": "IMPLEMENTED_P1"
+  },
+  {
+    "code": "workspace.asset.restore",
+    "label": "첨부 복원",
+    "stage": "P1",
+    "dependencies": [],
+    "binding": "workspace.asset.restore",
+    "state": "IMPLEMENTED_P1"
+  }
+]

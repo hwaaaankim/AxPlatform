@@ -1,0 +1,15 @@
+[역사 기록: v0.2.0 재포장 검사] 현재 v0.3.0 전체 소스/SQL의 실제 수행 결과는 TEST_REPORT.txt와 현재 버전 패키지 검수 기록을 읽으세요. 아래 31테이블·미실행 표기는 당시 버전에만 적용됩니다.
+
+AxPlatform 0.2.0 전체 누적 설치본 / 재포장 검사 / 2026-10-20
+원본: 2026-10-09 AxPlatform_P1_Source_v0.2.0.zip.
+PASS: 원본 ZIP CRC/SHA256 및 원본 manifest 파일 크기·해시 일치.
+PASS: 원본 Java·HTML·JS·CSS·공통/예제 설정·테스트·POM·기존 SQL 바이트 보존.
+PASS: 초기 V001 + 0.2.0 V002의 총 31개 테이블 선언과 MariaDB용 SQL 5개 포함.
+PASS: 소스/별도 SQL ZIP의 SQL 바이트 일치, 안내서/실행 순서 포함.
+PASS: jar-plugin 3.4.2 속성·직접 고정 및 로컬 AxPlatform DB URL 유지.
+PASS: 신규 안내서/수정 README를 반영한 manifest·SHA256 목록 재생성.
+PASS: 최종 ZIP CRC/체크섬/압축 경로, 개인 실제 파일/실행 스크립트/빌드 산출물 제외.
+새 애플리케이션 기능이나 DB migration을 추가한 릴리스가 아닙니다.
+실제 Maven·JUnit·MariaDB·Eclipse·브라우저·외부 서비스 검수는 이번에 실행하지 않았습니다.
+docs/TEST_REPORT.txt와 P1_STATIC_CHECKS.json은 이전 개발 당시의 검사 기록입니다.
+SQL 검사 결과는 문자열/구성·원본 보존 검사이며 실제 MariaDB 구문/실행 검사를 의미하지 않습니다.
