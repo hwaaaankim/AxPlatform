@@ -1,20 +1,9 @@
-# AxPlatform 0.5.0 로컬 개발 설정
-# Eclipse VM arguments: -Dspring.profiles.active=dev
-# Windows 기본 저장 루트: D:/AxPlatform/dev
-# D드라이브가 없는 환경에서는 AX_STORAGE_ROOT를 실제 절대 경로로 지정하세요.
-# 현재 제공된 접속 설정(127.0.0.1:8080, HTTP localhost)을 유지했습니다.
-# 실제 서버 도메인/HTTPS 연결 전에는 외부 가입·로그인 연동을 활성화하지 않습니다.
+# 로컬 개발 환경. Eclipse VM arguments: -Dspring.profiles.active=dev
+# Windows D드라이브가 있으면 D:/AxPlatform/dev, 그 외에는 사용자 홈/AxPlatform/dev.
+ax:
+  storage:
+    environment: dev
+    root: '${AX_STORAGE_ROOT:auto}'
 spring:
   thymeleaf:
     cache: false
-server:
-  address: 127.0.0.1
-  servlet:
-    session:
-      cookie:
-        secure: false
-ax:
-  public-base-url: 'http://localhost:8080'
-  storage:
-    environment: dev
-    root: '${AX_STORAGE_ROOT:D:/AxPlatform/dev}'

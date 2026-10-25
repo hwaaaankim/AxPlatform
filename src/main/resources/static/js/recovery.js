@@ -1,11 +1,11 @@
 import {
   request
 }
-from './request.js?v=0.6.0';
+from './request.js?v=0.9.1';
 import {
   message,busy
 }
-from './ui.js?v=0.6.0';
+from './ui.js?v=0.9.1';
 const status=document.getElementById('auth-status');
 const recovery=document.getElementById('recovery-form'),reset=document.getElementById('reset-form');
 if(recovery) {

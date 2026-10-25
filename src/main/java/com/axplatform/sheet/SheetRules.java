@@ -9,8 +9,9 @@ import java.util.*;
 
 /** Canonical, bounded sheet values shared by manual edits and AI proposals. */
 public final class SheetRules {
-    public static final int MAX_COLUMNS = 20;
-    public static final int MAX_ROWS = 200;
+    public static final int MAX_COLUMNS = 100;
+    public static final int MAX_ROWS = 50000;
+    public static final int MAX_CELLS = 1_000_000;
     public static final int MAX_CELL_LENGTH = 2000;
     private SheetRules() { }
 
@@ -32,12 +33,12 @@ public final class SheetRules {
     }
 
     public static Map<String,Object> normalize(Map<String,Object> raw) {
-        if (raw == null || !Set.of("columns", "rows", "rowIds").containsAll(raw.keySet())
+        if (raw == null || !Set.of("columns", "rows", "rowIds", "presentation", "view", "excel").containsAll(raw.keySet())
                 || !(raw.get("columns") instanceof List<?> inputColumns)
                 || !(raw.get("rows") instanceof List<?> inputRows))
             throw Problem.invalid("표의 열과 행을 확인해 주세요.");
-        if (inputColumns.size() > MAX_COLUMNS || inputRows.size() > MAX_ROWS)
-            throw Problem.invalid("이번 기본 표는 최대 20열·200행입니다.");
+        if (inputColumns.size() > MAX_COLUMNS || inputRows.size() > MAX_ROWS || (long) inputColumns.size() * inputRows.size() > MAX_CELLS)
+            throw Problem.invalid("시트는 최대 100열·50,000행·100만 셀입니다.");
         if (inputColumns.isEmpty() && !inputRows.isEmpty())
             throw Problem.invalid("먼저 열을 추가해 주세요.");
         List<Map<String,Object>> columns = new ArrayList<>();
@@ -45,7 +46,7 @@ public final class SheetRules {
         long totalBytes = 0;
         for (Object value : inputColumns) {
             if (!(value instanceof Map<?,?> c)
-                    || !Set.of("id", "label", "type", "unit", "width", "formula").containsAll(c.keySet()))
+                    || !Set.of("id", "label", "type", "unit", "width", "formula", "format", "decimals", "sourceHeader").containsAll(c.keySet()))
                 throw Problem.invalid("열 속성을 확인해 주세요.");
             String id = text(c.get("id"), 40, "열 ID", false);
             if (!id.matches("[A-Za-z][A-Za-z0-9_-]{0,39}") || !columnIds.add(id))
@@ -70,9 +71,14 @@ public final class SheetRules {
             column.put("unit", unit); column.put("width", width);
             String formula = text(c.containsKey("formula") ? c.get("formula") : "", 500, "계산식", true).strip();
             if (!formula.isEmpty()) column.put("formula", formula);
+            if(c.containsKey("sourceHeader"))column.put("sourceHeader",text(c.get("sourceHeader"),2000,"원본 제목",true));
+            if(c.containsKey("format")){String fmt=text(c.get("format"),12,"보기 형식",false);if(!Set.of("PLAIN","NUMBER","CURRENCY","PERCENT").contains(fmt))throw Problem.invalid("보기 형식을 확인하세요.");column.put("format",fmt);}
+            if(c.containsKey("decimals")){if(!(c.get("decimals") instanceof Number n)||n.doubleValue()!=n.intValue()||n.intValue()<0||n.intValue()>8)throw Problem.invalid("소수 자릿수는 0~8입니다.");column.put("decimals",((Number)c.get("decimals")).intValue());}
             columns.add(column);
             totalBytes += label.getBytes(StandardCharsets.UTF_8).length + unit.getBytes(StandardCharsets.UTF_8).length;
         }
+        var excel=raw.containsKey("excel")?ExcelCells.normalize(raw.get("excel"),inputRows.size(),columns.size()):Map.<String,Object>of();
+        boolean excelCalculation=!ExcelCells.map(excel,"formulas").isEmpty()||!ExcelCells.map(excel,"paused").isEmpty();
         List<List<String>> rows = new ArrayList<>();
         for (int r = 0; r < inputRows.size(); r++) {
             if (!(inputRows.get(r) instanceof List<?> values) || values.size() != columns.size())
@@ -81,7 +87,8 @@ public final class SheetRules {
             for (int c = 0; c < values.size(); c++) {
                 String value = text(values.get(c), MAX_CELL_LENGTH, (r + 1) + "행 " + (c + 1) + "열", true);
                 String type = (String) columns.get(c).get("type");
-                if (columns.get(c).containsKey("formula")) value="";
+                if(ExcelCells.map(excel,"formulas").containsKey(ExcelCells.ref(r+1,c))||ExcelCells.map(excel,"paused").containsKey(ExcelCells.ref(r+1,c)))type="TEXT";
+                if (columns.get(c).containsKey("formula")){if(excelCalculation)type="TEXT";else value="";}
                 if (!type.equals("TEXT")) value = value.strip();
                 if (!value.isEmpty() && type.equals("NUMBER")) {
                     if (!value.matches("[+-]?(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?"))
@@ -101,12 +108,13 @@ public final class SheetRules {
                     }
                 }
                 totalBytes += value.getBytes(StandardCharsets.UTF_8).length;
-                if (totalBytes > 2_000_000) throw Problem.invalid("표 내용은 UTF-8 기준 2MB 이내로 나누어 주세요.");
+                if (totalBytes > 10_000_000) throw Problem.invalid("표 내용은 UTF-8 기준 10MB 이내로 나누어 주세요.");
                 row.add(value);
             }
             rows.add(row);
         }
-        SheetFormula.calculate(columns, rows);
+        for(var ref:ExcelCells.map(excel,"formulas").keySet())if(columns.get(ExcelCells.position(ref)[1]).containsKey("formula"))throw Problem.invalid(ref+": 셀 수식과 전체 열 계산식을 함께 적용할 수 없습니다. 셀 수식을 먼저 검토하세요.");
+        if(excelCalculation)SheetFormula.validate(columns);else SheetFormula.calculate(columns, rows);
         List<?> inputIds;
         if (!raw.containsKey("rowIds")) inputIds = rows.stream().map(x -> UUID.randomUUID().toString()).toList();
         else if (raw.get("rowIds") instanceof List<?> ids && ids.size() == rows.size()) inputIds = ids;
@@ -120,6 +128,9 @@ public final class SheetRules {
         }
         Map<String,Object> result = new LinkedHashMap<>();
         result.put("columns", List.copyOf(columns)); result.put("rows", List.copyOf(rows)); result.put("rowIds", List.copyOf(rowIds));
+        if(raw.containsKey("presentation"))result.put("presentation",SheetPresentation.normalize(raw.get("presentation"),rows.size(),columns.size()));
+        if(raw.containsKey("view"))result.put("view",SheetPresentation.view(raw.get("view"),columnIds));
+        if(!excel.isEmpty())result.put("excel",excel);
         return result;
     }
 
@@ -135,16 +146,24 @@ public final class SheetRules {
         Map<String,Object> oldFormulas=new LinkedHashMap<>(),newFormulas=new LinkedHashMap<>();
         oldColumns.stream().filter(c->c.containsKey("formula")).forEach(c->oldFormulas.put((String)c.get("id"),c.get("formula")));
         newColumns.stream().filter(c->c.containsKey("formula")).forEach(c->newFormulas.put((String)c.get("id"),c.get("formula")));
+        oldFormulas.put("__excel",ExcelCells.map(ExcelCells.meta(before),"formulas"));newFormulas.put("__excel",ExcelCells.map(ExcelCells.meta(after),"formulas"));
+        oldFormulas.put("__paused",ExcelCells.map(ExcelCells.meta(before),"paused"));newFormulas.put("__paused",ExcelCells.map(ExcelCells.meta(after),"paused"));
+        if(!ExcelCells.map(ExcelCells.meta(before),"values").equals(ExcelCells.map(ExcelCells.meta(after),"values")))actions.add("workspace.sheet.cells.update");
         if(!oldFormulas.equals(newFormulas))actions.add("workspace.sheet.formula.update");
-        if (oldIds.stream().anyMatch(x -> !newIds.contains(x))) actions.add("workspace.sheet.rows.delete");
-        if (newIds.stream().anyMatch(x -> !oldIds.contains(x))) actions.add("workspace.sheet.rows.create");
-        List<String> oldCommon = oldIds.stream().filter(newIds::contains).toList();
-        List<String> newCommon = newIds.stream().filter(oldIds::contains).toList();
+        Set<String> oldSet=new HashSet<>(oldIds),newSet=new HashSet<>(newIds);
+        if (oldIds.stream().anyMatch(x -> !newSet.contains(x))) actions.add("workspace.sheet.rows.delete");
+        if (newIds.stream().anyMatch(x -> !oldSet.contains(x))) actions.add("workspace.sheet.rows.create");
+        List<String> oldCommon = oldIds.stream().filter(newSet::contains).toList();
+        List<String> newCommon = newIds.stream().filter(oldSet::contains).toList();
         if (!oldCommon.equals(newCommon)) actions.add("workspace.sheet.cells.update");
         Map<String,Integer> oldIndex = new HashMap<>();
         for (int c = 0; c < oldColumns.size(); c++) oldIndex.put((String) oldColumns.get(c).get("id"), c);
+        Map<String,Integer> oldRowsById=new HashMap<>(),newRowsById=new HashMap<>();
+        for(int i=0;i<oldIds.size();i++)oldRowsById.put(oldIds.get(i),i);
+        for(int i=0;i<newIds.size();i++)newRowsById.put(newIds.get(i),i);
+        if(!Objects.equals(before.get("presentation"),after.get("presentation"))||!Objects.equals(before.get("view"),after.get("view")))actions.add("workspace.sheet.schema.update");
         for (String rowId : newCommon) {
-            List<String> oldRow = oldRows.get(oldIds.indexOf(rowId)), newRow = newRows.get(newIds.indexOf(rowId));
+            List<String> oldRow = oldRows.get(oldRowsById.get(rowId)), newRow = newRows.get(newRowsById.get(rowId));
             for (int c = 0; c < newColumns.size(); c++) {
                 Integer oldAt = oldIndex.get(newColumns.get(c).get("id"));
                 if (oldAt == null ? !newRow.get(c).isEmpty() : !Objects.equals(oldRow.get(oldAt), newRow.get(c)))

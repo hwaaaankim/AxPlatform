@@ -49,6 +49,13 @@ public class V005SchemaCheck implements ApplicationRunner {
                         var binding =
                                 db.queryForMap(
                                         "SELECT * FROM ap_storage_binding WHERE id=1 FOR UPDATE");
+                        // DB metadata is shared; file availability is local to each running computer.
+                        // Never rebind the shared row on another computer's behalf.
+                        if (storage.perDevice()) {
+                            org.slf4j.LoggerFactory.getLogger(V005SchemaCheck.class).info(
+                                    "PC별 파일 보관 모드: DB 공유 허용. 원본 파일은 현재 컴퓨터에서 확인합니다.");
+                            return;
+                        }
                         String profile = env.getProperty("ax.storage.environment", "local"),
                                 root = storage.roots().get("managedRoot").replace('\\', '/');
                         if (binding.get("environment_key") == null)

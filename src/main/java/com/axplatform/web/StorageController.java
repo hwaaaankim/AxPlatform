@@ -27,6 +27,26 @@ public class StorageController {
 
     public record Version(long version) {}
 
+    @PostMapping(value = {"/api/my/files/{id}/replace", "/api/admin/files/{id}/replace"},
+            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Object replace(@PathVariable String id, @RequestParam long version,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return assets.replace(Subjects.current(), id, file, version,
+                request.getRequestURI().startsWith("/api/admin/"));
+    }
+
+    @GetMapping({"/api/my/files/{id}/preview", "/api/admin/files/{id}/preview"})
+    public org.springframework.http.ResponseEntity<byte[]> preview(@PathVariable String id,
+            jakarta.servlet.http.HttpServletRequest request) {
+        var preview = assets.preview(Subjects.current(), id, request.getRequestURI().startsWith("/api/admin/"));
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(preview.mediaType()))
+                .header("Cache-Control", "no-store")
+                .header("X-Content-Type-Options", "nosniff")
+                .body(preview.bytes());
+    }
+
     @GetMapping({"/api/my/files", "/api/admin/files"})
     public Object list(
             jakarta.servlet.http.HttpServletRequest request,

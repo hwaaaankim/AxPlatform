@@ -34,6 +34,7 @@ class P3SheetIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired SheetService sheets;
     @Autowired SheetViewService views;
+    @Autowired DataCenterService dataCenter;
     @Autowired DraftService drafts;
     @Autowired AiService ai;
     @Autowired com.axplatform.policy.AccessService access;
@@ -42,6 +43,76 @@ class P3SheetIntegrationTest {
     @Autowired com.axplatform.operations.AiMeteringService metering;
     @Autowired java.time.Clock clock;
     @Autowired JsonCodec json;
+    @Autowired com.axplatform.storage.ManagedStorage storage;
+
+    @Test void replacementEndpointRequiresCsrfOwnershipAndCurrentVersion() throws Exception {
+        grant("workspace.asset.upload", "workspace.asset.archive", "workspace.asset.list", "workspace.asset.download");
+        Owner owner = customer();
+        String asset = (String) assets.store(owner.principal(), owner.business(), "original.txt", "old".getBytes(),
+                "COMMON", null, null, "SOURCE").get("id");
+        var file = new org.springframework.mock.web.MockMultipartFile("file", "new.txt", "text/plain", "new".getBytes());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/my/files/" + asset + "/replace")
+                .file(file).param("version", "0").session(session(owner.principal())))
+                .andExpect(status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/my/files/" + asset + "/replace")
+                .file(file).param("version", "0").session(session(owner.principal()))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(asset)).andExpect(jsonPath("$.version").value(1));
+        assertThat(assets.read(owner.principal(), asset)).isEqualTo("new".getBytes());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/my/files/" + asset + "/replace")
+                .file(file).param("version", "0").session(session(owner.principal()))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isConflict());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/my/files/" + asset + "/replace")
+                .file(file).param("version", "1").session(session(customer().principal()))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isNotFound());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/admin/files/" + asset + "/replace")
+                .file(file).param("version", "1").session(session(owner.principal()))
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test void imagePreviewAndMissingSourceLeaveTheProjectAccessible() throws Exception {
+        grant("workspace.asset.upload", "workspace.asset.archive", "workspace.asset.list", "workspace.asset.download");
+        Owner owner = customer();String draft = draft(owner, "EXCEL");
+        var out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", out);
+        String asset = (String) assets.store(owner.principal(), owner.business(), "photo.png", out.toByteArray(),
+                "PROJECT", "EXCEL", draft, "PHOTO").get("id");
+        drafts.edit(owner.principal(), draft, new DraftService.Edit("photo work", Map.of(), List.of(asset), 0));
+        mvc.perform(get("/api/my/files/" + asset + "/preview").session(session(owner.principal())))
+                .andExpect(status().isOk()).andExpect(content().contentType("image/png"))
+                .andExpect(header().string("Cache-Control", "no-store")).andExpect(content().bytes(out.toByteArray()));
+        mvc.perform(get("/api/my/files/" + asset + "/preview").session(session(customer().principal())))
+                .andExpect(status().isNotFound());
+        var row = db.queryForMap("SELECT * FROM ap_asset WHERE id=?", asset);
+        java.nio.file.Files.delete(storage.resolve((String) row.get("root_kind"), (String) row.get("disk_key")));
+        mvc.perform(get("/api/my/files/" + asset + "/preview").session(session(owner.principal())))
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("STORAGE_MISSING"));
+        mvc.perform(get("/api/my/files").session(session(owner.principal())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].local_status").value("MISSING"))
+                .andExpect(jsonPath("$.items[0].disk_key").doesNotExist());
+        mvc.perform(get("/work/drafts/" + draft).session(session(owner.principal())))
+                .andExpect(status().isOk());
+    }
+
+    @Test @SuppressWarnings("unchecked") void suppliedWorkbookSavesReopensExportsAndUndoesWithoutDataLoss() throws Exception {
+        String path=System.getProperty("ax.qa.workbookJson");org.junit.jupiter.api.Assumptions.assumeTrue(path!=null,"Optional user workbook regression fixture");
+        ordinarySheetPermissions();grant("workspace.sheet.rows.delete","workspace.sheet.export","workspace.sheet.export.template","workspace.sheet.formula.update");Owner owner=customer();String id=draft(owner,"EXCEL");
+        db.update("INSERT INTO ap_schema_migration(version,description,applied_at) SELECT 'V006','Test workbook capacity',CURRENT_TIMESTAMP WHERE NOT EXISTS(SELECT 1 FROM ap_schema_migration WHERE version='V006')");
+        var book=json.object(java.nio.file.Files.readString(java.nio.file.Path.of(path)));
+        // Source-link authorization is covered separately; this fixture checks complete saved content.
+        for(var entry:(List<Map<String,Object>>)book.get("sheets"))entry.put("sourceAssetIds",List.of());
+        var first=sheets.putWorkbook(owner.principal(),id,book,-1,0);var expected=WorkbookCalculation.calculate(book);assertThat(storedBook(owner,id)).isEqualTo(expected);
+        var entries=WorkbookRules.sheets(expected);assertThat(entries).hasSize(2);for(var entry:entries)assertThat(WorkbookRules.data(expected,(String)entry.get("id")).get("rows")).isEqualTo(WorkbookRules.data(book,(String)entry.get("id")).get("rows"));
+        var export=sheets.export(owner.principal(),id,false);var report=SheetImport.readWorkbook(export.data(),"roundtrip.xlsx","UTF-8");var reread=(List<Map<String,Object>>)report.get("sheets");
+        for(int i=0;i<2;i++){var source=WorkbookRules.data(expected,(String)entries.get(i).get("id"));assertThat(reread.get(i).get("rows")).isEqualTo(source.get("rows"));}
+        var changed=json.object(json.write(expected));var target=WorkbookRules.data(changed,(String)entries.get(0).get("id"));var rows=(List<List<String>>)target.get("rows");int last=rows.size()-1,editable=((List<?>)target.get("columns")).size()-1;while(editable>0&&ExcelCells.hasFormula(target,ExcelCells.ref(last+1,editable)))editable--;rows.get(last).set(editable,"123");
+        sheets.putWorkbook(owner.principal(),id,changed,0,1);assertThat(WorkbookRules.data(storedBook(owner,id),(String)entries.get(0).get("id")).get("rows")).isEqualTo(WorkbookRules.data(WorkbookCalculation.calculate(changed),(String)entries.get(0).get("id")).get("rows"));
+        sheets.undo(owner.principal(),id,1,2);assertThat(storedBook(owner,id)).isEqualTo(expected);
+        assertThat(sheets.export(owner.principal(),id,true).data()).isNotEmpty();
+    }
 
     record Owner(CustomerPrincipal principal, long workspace, long business) { }
     @BeforeEach void restrictToMemoryDatabase() throws Exception {
@@ -237,6 +308,21 @@ class P3SheetIntegrationTest {
     }
 
 
+    @Test @SuppressWarnings("unchecked") void nativeFormulaSaveRecalculatesAndChecksPermission() throws Exception {
+        ordinarySheetPermissions();Owner owner=customer();String id=draft(owner,"EXCEL");
+        var data=new LinkedHashMap<>(table("999","r1"));data.put("excel",Map.of("formulas",Map.of("A2","SUM(2,3)")));
+        assertThatThrownBy(()->sheets.put(owner.principal(),id,data,-1,0)).isInstanceOf(Problem.class);
+        grant("workspace.sheet.formula.update");var saved=sheets.put(owner.principal(),id,data,-1,0);assertThat(((Map<?,?>)saved.get("sheet")).get("rows")).isEqualTo(List.of(List.of("5")));
+        var session=session(owner.principal());var book=(Map<String,Object>)saved.get("workbook");mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/sheets/workbook-calculation?businessId="+owner.business()).session(session).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.write(book))).andExpect(status().isOk());
+        assertThat(ExcelCells.map(ExcelCells.meta(WorkbookRules.data(storedBook(owner,id),null)),"formulas")).containsEntry("A2","SUM(2,3)");
+    }
+
+    @Test void aiFormulaProposalSurvivesReviewNormalizationAndAppliesOnce(){
+        ordinarySheetPermissions();grant("workspace.ai.read","workspace.ai.apply","workspace.sheet.formula.update");Owner owner=customer();String id=draft(owner,"EXCEL");
+        sheets.put(owner.principal(),id,table("1","r1"),-1,0);var proposed=com.axplatform.ai.ProposalRules.normalize(proposal(table("=SUM(2,3)","r1")),"EXCEL");var session=session(owner.principal());String run=readyRun(owner,id,1,0,proposed,session),key=UUID.randomUUID().toString();var command=new AiService.Apply(key,1,0,List.of("sheet"),proposed,true);
+        assertThat(ai.apply(owner.principal(),session,run,command,key).get("status")).isEqualTo("APPLIED");assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("5");assertThat(ai.apply(owner.principal(),session,run,command,key).get("status")).isEqualTo("APPLIED");
+    }
+
     private Map<String,Object> workbook(String a,String b){return WorkbookRules.normalize(Map.of("format","AX_WORKBOOK_1","activeSheetId","sheet1","sheets",List.of(
         Map.of("id","sheet1","name","매출","data",table(a,"r1"),"sourceAssetIds",List.of()),
         Map.of("id","inventory","name","재고","data",table(b,"r2"),"sourceAssetIds",List.of()))));}
@@ -307,4 +393,38 @@ class P3SheetIntegrationTest {
             assertThat(WorkbookRules.data(storedBook(owner,id),"sheet1")).isEqualTo(table("PHOTO_1","r1"));assertThat(WorkbookRules.data(storedBook(owner,id),"inventory")).isEqualTo(table("PHOTO_2","r2"));
         } finally {worker.close();}
     }
+    private Map<String,Object> dataView(){return new LinkedHashMap<>(Map.of("format","AX_DATA_VIEW_1","mode","TABLE","sheetId","sheet1","name","조회"));}
+    @Test void savedDataIsListedAndReadableWithoutAnalysisPermission() throws Exception {
+        ordinarySheetPermissions();Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("DATA","r1"),-1,0);
+        assertThat(drafts.list(owner.principal(),owner.business(),false).get(0).get("has_sheet")).isEqualTo(1L);
+        assertThat(dataCenter.data(owner.principal(),id,dataView(),0,true).get("rows")).isEqualTo(List.of(List.of("DATA")));
+        var report=dataView();report.put("mode","REPORT");report.put("metrics",List.of(Map.of("operation","COUNT","column","")));
+        assertThatThrownBy(()->dataCenter.data(owner.principal(),id,report,0,false)).isInstanceOf(Problem.class);
+        assertThatThrownBy(()->dataCenter.data(customer().principal(),id,dataView(),0,true)).isInstanceOf(Problem.class);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/drafts/"+id+"/sheet/data").session(session(owner.principal())).contentType("application/json").content(json.write(Map.of("config",dataView(),"page",0)))).andExpect(status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/drafts/"+id+"/sheet/data").session(session(owner.principal())).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.write(Map.of("config",dataView(),"page",0)))).andExpect(status().isOk()).andExpect(jsonPath("$.rows[0][0]").value("DATA"));
+    }
+    @Test @SuppressWarnings("unchecked") void multipleViewsSaveWithoutChangingDatasetAndConflictOnStaleVersion(){
+        ordinarySheetPermissions();grant("workspace.sheet.analysis.read","workspace.sheet.analysis.manage");Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("A","r1"),-1,0);var before=storedBook(owner,id);
+        var a=dataView();a.put("filters",List.of(Map.of("column","code","operator","EQ","value","A")));var b=dataView();b.put("name","보고서");b.put("mode","REPORT");b.put("dimensions",List.of("code"));b.put("metrics",List.of(Map.of("operation","COUNT","column","")));
+        String viewId=UUID.randomUUID().toString();views.save(owner.principal(),id,viewId,-1,0,a);views.save(owner.principal(),id,UUID.randomUUID().toString(),-1,0,b);assertThat((List<?>)views.list(owner.principal(),id)).hasSize(2);assertThat(storedBook(owner,id)).isEqualTo(before);
+        sheets.put(owner.principal(),id,table("B","r1"),0,1);assertThatThrownBy(()->views.save(owner.principal(),id,viewId,0,0,a)).isInstanceOf(Problem.class);views.delete(owner.principal(),id,viewId,0);assertThat((List<?>)views.list(owner.principal(),id)).hasSize(1);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("B");
+    }
+    @Test void calculatedColumnPreviewIsReadOnlyAndCommitChecksPermissionsAndVersions() throws Exception {
+        ordinarySheetPermissions();Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("3","r1"),-1,0);var spec=Map.<String,Object>of("sheetId","sheet1","label","배수","formula","=A{row}*2","scope","ALL");
+        assertThatThrownBy(()->dataCenter.column(owner.principal(),id,spec,0,1,false,false)).isInstanceOf(Problem.class);grant("workspace.sheet.formula.update");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/drafts/"+id+"/sheet/calculated-column").session(session(owner.principal())).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.write(Map.of("spec",spec,"sheetVersion",0,"draftVersion",1,"apply",false)))).andExpect(status().isOk()).andExpect(jsonPath("$.affectedRows").value(1));
+        var preview=dataCenter.column(owner.principal(),id,spec,0,1,false,false);assertThat(preview.get("errorCount")).isEqualTo(0);assertThat(((List<?>)WorkbookRules.data(storedBook(owner,id),null).get("columns"))).hasSize(1);
+        dataCenter.column(owner.principal(),id,spec,0,1,true,false);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"B2")).isEqualTo("6");assertThatThrownBy(()->dataCenter.column(owner.principal(),id,spec,0,1,true,false)).isInstanceOf(Problem.class);
+    }
+    @Test void formulaErrorsNeedExplicitCommitAcceptance(){
+        ordinarySheetPermissions();grant("workspace.sheet.formula.update");Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("3","r1"),-1,0);var spec=Map.<String,Object>of("sheetId","sheet1","label","오류","formula","=1/0","scope","ALL");
+        assertThat(dataCenter.column(owner.principal(),id,spec,0,1,false,false).get("errorCount")).isEqualTo(1);assertThatThrownBy(()->dataCenter.column(owner.principal(),id,spec,0,1,true,false)).isInstanceOf(Problem.class);dataCenter.column(owner.principal(),id,spec,0,1,true,true);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"B2")).isEqualTo("#DIV/0!");
+    }
+    @Test void viewExportsIncludeAllFilteredRowsAndDoNotExecuteCsvFormulas(){
+        ordinarySheetPermissions();grant("workspace.sheet.export");Owner owner=customer();String id=draft(owner,"EXCEL");var data=new LinkedHashMap<>(table("3","r1"));var rows=new ArrayList<List<String>>();var ids=new ArrayList<String>();for(int i=0;i<240;i++){rows.add(List.of(i==0?"=SUM(1,1)":"ROW"+i));ids.add("r"+i);}data.put("rows",rows);data.put("rowIds",ids);sheets.put(owner.principal(),id,data,-1,0);
+        assertThat((List<?>)dataCenter.data(owner.principal(),id,dataView(),1,false).get("rows")).hasSize(100);var exported=dataCenter.export(owner.principal(),id,dataView(),"csv",0);String csv=new String(exported.data(),java.nio.charset.StandardCharsets.UTF_8);assertThat(csv).contains("'=SUM(1,1)","ROW239");assertThat(csv.lines().count()).isEqualTo(241);
+        var xlsx=dataCenter.export(owner.principal(),id,dataView(),"xlsx",0);assertThat((List<?>)SheetImport.read(xlsx.data(),xlsx.filename(),"UTF-8","").get("rows")).hasSize(240);assertThatThrownBy(()->dataCenter.export(owner.principal(),id,dataView(),"csv",9)).isInstanceOf(Problem.class);assertThatThrownBy(()->dataCenter.export(customer().principal(),id,dataView(),"csv",0)).isInstanceOf(Problem.class);
+    }
+
 }

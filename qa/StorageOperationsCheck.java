@@ -39,6 +39,75 @@ public class StorageOperationsCheck {
   for(int i=0;i<26;i++)upload(b,"COMMON",null,null,"paging");var first=assets.page(b.user(),false,null,null,null,null,null,"","ACTIVE",1);var second=assets.page(b.user(),false,null,null,null,null,null,"","ACTIVE",2);ok(((List<?>)first.get("items")).size()==25&&((List<?>)second.get("items")).size()==2,"server pagination does not hide older files");
   ok(((List<?>)assets.choices(b.user(),b.business(),other,"EXCEL","ALL","",1).get("items")).size()==25,"source picker is server paginated");ok(assets.selected(b.user(),b.business(),other,List.of((String)once.get("id"))).size()==1,"only explicitly selected sources loaded");ok(((List<?>)assets.choices(a.user(),a.business(),word,"WORD","SHEET","",1).get("items")).isEmpty(),"source kind filter applied on server");
   var schemaCheck=new com.axplatform.bootstrap.V005SchemaCheck(db,env,disk,tx);schemaCheck.run(null);schemaCheck.run(null);ok(db.queryForObject("SELECT volume_id FROM ap_storage_binding WHERE id=1",String.class).equals(disk.volumeId()),"storage binds volume identity idempotently");env.getPropertySources().addFirst(new MapPropertySource("otherEnvironment",Map.of("ax.storage.environment","test")));try{schemaCheck.run(null);throw new AssertionError("must reject another environment");}catch(IllegalStateException expected){ok(true,"wrong environment rejected before serving files");}
+
+  // v0.6.1: one shared DB, three independent local disks. No network/private credentials.
+  var mobile=owner("mobile");String mobileProject=project(mobile,"EXCEL");
+  String original=upload(mobile,"PROJECT","EXCEL",mobileProject,"office original");
+  drafts.edit(mobile.user(),mobileProject,new DraftService.Edit("shared project",Map.of("purpose","keep me"),List.of(original),0));
+  var officeRow=db.queryForMap("SELECT * FROM ap_asset WHERE id=?",original);
+  var homeEnv=new StandardEnvironment();homeEnv.getPropertySources().addFirst(new MapPropertySource("home",Map.of("ax.storage.root",temp.resolve("home").toString(),"ax.storage.binding-mode","per-device","ax.storage.environment","dev")));
+  var macEnv=new StandardEnvironment();macEnv.getPropertySources().addFirst(new MapPropertySource("mac",Map.of("ax.storage.root",temp.resolve("mac").toString(),"ax.storage.binding-mode","per-device","ax.storage.environment","dev")));
+  var homeDisk=new ManagedStorage(homeEnv,clock);var macDisk=new ManagedStorage(macEnv,clock);
+  var home=new AssetService(db,access,clock,homeDisk,limits,tx,json,policy);var mac=new AssetService(db,access,clock,macDisk,limits,tx,json,policy);
+  var oldBinding=new LinkedHashMap<>(db.queryForMap("SELECT * FROM ap_storage_binding WHERE id=1"));
+  new com.axplatform.bootstrap.V005SchemaCheck(db,homeEnv,homeDisk,tx).run(null);
+  new com.axplatform.bootstrap.V005SchemaCheck(db,macEnv,macDisk,tx).run(null);
+  ok(oldBinding.equals(db.queryForMap("SELECT * FROM ap_storage_binding WHERE id=1")),"portable boots do not rewrite shared binding");
+  ok(!homeDisk.volumeId().equals(macDisk.volumeId())&&!disk.volumeId().equals(homeDisk.volumeId()),"each PC owns its own marker");
+  var missing=home.selected(mobile.user(),mobile.business(),mobileProject,List.of(original)).get(0);
+  ok(Boolean.FALSE.equals(missing.get("file_exists"))&&"MISSING".equals(missing.get("local_status")),"missing local original remains in attachment list");
+  ok(!missing.containsKey("disk_key")&&!missing.containsKey("root_kind")&&!missing.containsKey("absolute_path"),"member availability does not expose paths");
+  var choices=(List<Map<String,Object>>)home.choices(mobile.user(),mobile.business(),mobileProject,"EXCEL","ALL","",1).get("items");
+  ok(choices.size()==1&&Boolean.FALSE.equals(choices.get(0).get("file_exists")),"missing file visible in source picker");
+  ok("READY".equals(db.queryForObject("SELECT storage_state FROM ap_asset WHERE id=?",String.class,original)),"local absence never changes shared asset state");
+  denied(()->home.read(mobile.user(),original),"STORAGE_MISSING");
+  ok(((Map<?,?>)drafts.get(mobile.user(),mobileProject).get("answers")).get("purpose").equals("keep me"),"project data opens without local files");
+  var replacement=new org.springframework.mock.web.MockMultipartFile("file","new.txt","text/plain","home new".getBytes());
+  denied(()->home.replace(b.user(),original,replacement,0,false),"ASSET_NOT_FOUND");
+  denied(()->home.replace(b.user(),original,replacement,0,true),"ADMIN_REQUIRED");
+  denied(()->home.replace(mobile.user(),original,replacement,9,false),"VERSION_CONFLICT");
+  long priorBytes=limits.bytes(mobile.user().accountId());
+  var changed=home.replace(mobile.user(),original,replacement,0,false);
+  ok(original.equals(changed.get("id"))&&((Number)changed.get("version")).longValue()==1,"replacement preserves ID and increments version");
+  ok(Arrays.equals(home.read(mobile.user(),original),"home new".getBytes()),"home replacement reads with validated hash");
+  ok(limits.bytes(mobile.user().accountId())==priorBytes-"office original".length()+"home new".length(),"quota uses replacement size delta");
+  ok(((List<?>)drafts.get(mobile.user(),mobileProject).get("assetIds")).contains(original),"replacement preserves project attachment");
+  ok(Files.isRegularFile(disk.resolve("MANAGED",(String)officeRow.get("disk_key"))),"office old bytes left alone");
+  denied(()->assets.read(mobile.user(),original),"STORAGE_MISSING");denied(()->mac.read(mobile.user(),original),"STORAGE_MISSING");
+  ok(Boolean.FALSE.equals(assets.selected(mobile.user(),mobile.business(),mobileProject,List.of(original)).get(0).get("file_exists")),"old office bytes cannot masquerade as replacement");
+  var homePage=(List<Map<String,Object>>)home.page(admin,true,mobile.user().accountId(),null,null,null,null,"","ACTIVE",1).get("items");
+  ok(homePage.get(0).get("absolute_path").toString().startsWith(temp.resolve("home").toString())&&Boolean.TRUE.equals(homePage.get(0).get("file_exists")),"admin reports current computer path");
+  long usedMobile=limits.bytes(mobile.user().accountId());limits.change(admin,mobile.user().accountId(),new UsagePolicyService.Change(usedMobile,true,0,BigDecimal.ZERO,-1,"exact quota"));
+  denied(()->home.replace(mobile.user(),original,new org.springframework.mock.web.MockMultipartFile("file","large.txt","text/plain","too large for quota".getBytes()),1,false),"STORAGE_QUOTA");
+  denied(()->home.replace(mobile.user(),original,new org.springframework.mock.web.MockMultipartFile("file","bad.csv","text/csv","a,b".getBytes()),1,false),"INVALID_INPUT");
+  String activeRun=run(mobile,mobileProject);db.update("UPDATE ap_ai_run SET request_json=? WHERE id=?",json.write(Map.of("assetIds",List.of(original))),activeRun);
+  denied(()->home.replace(mobile.user(),original,replacement,1,false),"VERSION_CONFLICT");
+  db.update("UPDATE ap_ai_run SET status='READY' WHERE id=?",activeRun);
+  mac.replace(admin,original,new org.springframework.mock.web.MockMultipartFile("file","mac.txt","text/plain","mac".getBytes()),1,true);
+  ok("FAILED".equals(db.queryForObject("SELECT status FROM ap_ai_run WHERE id=?",String.class,activeRun)),"old unapplied AI proposal expires when source replaced");
+  ok(Arrays.equals(mac.read(mobile.user(),original),"mac".getBytes()),"admin can replace missing user file on third computer");
+  denied(()->home.read(mobile.user(),original),"STORAGE_MISSING");
+  // Same-length corruption still fails the content read even when stat-based list says present.
+  var macRow=db.queryForMap("SELECT * FROM ap_asset WHERE id=?",original);Path macFile=macDisk.resolve("MANAGED",(String)macRow.get("disk_key"));Files.writeString(macFile,"bad");
+  denied(()->mac.read(mobile.user(),original),"STORAGE_INTEGRITY");
+  mac.replace(mobile.user(),original,new org.springframework.mock.web.MockMultipartFile("file","repaired.txt","text/plain","ok".getBytes()),2,false);
+  ok(!Files.exists(macFile),"superseded local bytes removed after committed replacement");
+  var applied=db.queryForMap("SELECT * FROM ap_asset WHERE id=?",original);Files.delete(macDisk.resolve("MANAGED",(String)applied.get("disk_key")));
+  mac.archive(mobile.user(),original,true,3);denied(()->mac.replace(mobile.user(),original,replacement,4,false),"VERSION_CONFLICT");
+  mac.purge(mobile.user(),original,4,true,false);
+  ok(limits.bytes(mobile.user().accountId())==0,"missing original can be purged without blocking quota release");
+  ok(((List<?>)drafts.get(mobile.user(),mobileProject).get("assetIds")).isEmpty(),"explicit purge removes shared reference");
+
+  String racing=upload(mobile,"COMMON",null,null,"x");
+  ExecutorService replacePool=Executors.newFixedThreadPool(2);CountDownLatch replaceStart=new CountDownLatch(1);var races=new ArrayList<Future<Boolean>>();
+  for(AssetService device:List.of(home,mac))races.add(replacePool.submit(()->{replaceStart.await();try{device.replace(mobile.user(),racing,new org.springframework.mock.web.MockMultipartFile("file","race.txt","text/plain","r".getBytes()),0,false);return true;}catch(Problem e){if(!"VERSION_CONFLICT".equals(e.code()))throw e;return false;}}));
+  replaceStart.countDown();int replaceWins=0;for(var race:races)if(race.get())replaceWins++;replacePool.shutdownNow();
+  ok(replaceWins==1&&db.queryForObject("SELECT version FROM ap_asset WHERE id=?",Long.class,racing)==1,"simultaneous device replacements have exactly one committed winner");
+  boolean homeHas=Boolean.TRUE.equals(home.selected(mobile.user(),mobile.business(),null,List.of(racing)).get(0).get("file_exists"));
+  boolean macHas=Boolean.TRUE.equals(mac.selected(mobile.user(),mobile.business(),null,List.of(racing)).get(0).get("file_exists"));
+  ok(homeHas!=macHas,"replacement bytes exist only on the winning computer");
+  db.update("DELETE FROM ap_schema_migration WHERE version='V005'");
+  try{new com.axplatform.bootstrap.V005SchemaCheck(db,homeEnv,homeDisk,tx).run(null);throw new AssertionError("schema must remain required");}catch(IllegalStateException expected){ok(true,"portable mode never bypasses DB schema validation");}
   System.out.println("PASS "+checks+" storage / ownership / deletion / migration / AI metering / budget / analytics assertions; H2 + temporary files only.");
  }
 }

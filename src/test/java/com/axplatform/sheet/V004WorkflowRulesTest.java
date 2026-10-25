@@ -39,7 +39,7 @@ class V004WorkflowRulesTest {
     @Test void generatedWorkbookRoundTripsAndFormulaPreviewWarnsAboutCachedValues() throws Exception {
         var table=SheetRules.normalize(table(List.of(column("qty","NUMBER",null),column("total","NUMBER","[qty]*2")),List.of(List.of("3",""))));
         var preview=SheetImport.read(XlsxWriter.bytes(table),"data.xlsx","UTF-8","");
-        assertThat(preview.get("rows")).isEqualTo(List.of(List.of("3","6")));assertThat((List<?>)preview.get("warnings")).hasSize(2);
+        assertThat(preview.get("rows")).isEqualTo(List.of(List.of("3","6")));assertThat(preview.get("issues").toString()).contains("FORMULA_PRESERVED");
         assertThatThrownBy(()->SheetImport.read(new byte[]{1,2,3},"bad.xlsx","UTF-8","")).isInstanceOf(Problem.class);
     }
 }

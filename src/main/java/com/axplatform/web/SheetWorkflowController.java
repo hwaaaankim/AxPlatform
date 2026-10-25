@@ -29,6 +29,26 @@ public class SheetWorkflowController {
     public record ViewInput(
             String id, long version, long sheetVersion, Map<String, Object> config) {}
 
+    @PostMapping("/api/sheets/preview-calculation")
+    public Object calculation(@RequestParam long businessId,@RequestBody Map<String,Object> sheet) {
+        return access.business(Subjects.current(),businessId,false,
+            List.of("workspace.sheet.read","workspace.sheet.update","workspace.sheet.formula.update"),()->WorkbookRules.data(WorkbookCalculation.calculate(sheet),null));
+    }
+
+    @PostMapping("/api/sheets/workbook-calculation")
+    public Object workbookCalculation(@RequestParam long businessId,@RequestParam(defaultValue="calculate") String action,@RequestBody Map<String,Object> book) {
+        return access.business(Subjects.current(),businessId,false,action.equals("calculate")?List.of("workspace.sheet.read","workspace.sheet.update"):List.of("workspace.sheet.read","workspace.sheet.update","workspace.sheet.formula.update"),
+            ()->action.equals("calculate")?WorkbookCalculation.calculate(book):WorkbookCalculation.repair(book,action));
+    }
+
+    public record Structure(Map<String,Object> workbook,String sheetId,List<Integer> rows,List<String> columns,String name,boolean remove) {}
+    @PostMapping("/api/sheets/workbook-structure")
+    public Object structure(@RequestParam long businessId,@RequestBody Structure input){
+        var actions=new ArrayList<>(List.of("workspace.sheet.read","workspace.sheet.update","workspace.sheet.schema.update"));
+        if(input.remove()||input.rows()!=null)actions.add("workspace.sheet.rows.delete");
+        return access.business(Subjects.current(),businessId,false,actions,()->WorkbookStructure.apply(input.workbook(),input.sheetId(),input.rows(),input.columns(),input.name(),input.remove()));
+    }
+
     public record StoredPreview(String assetId, String encoding, String sheetName) {}
 
     @PostMapping("/api/sheets/workbook-preview")

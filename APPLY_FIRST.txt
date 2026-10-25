@@ -1,0 +1,15 @@
+AxPlatform 0.6.1 — PC별 파일 보관 수정 패치
+
+0.6.0이 적용된 프로젝트에 사용하세요.
+1) Run 중지 → 프로젝트 소스 백업.
+2) 이 ZIP 안의 파일들을 pom.xml이 있는 프로젝트 루트에 덮어쓰기.
+3) Eclipse Refresh(F5) → Project > Clean → Run. 브라우저 새로고침.
+
+config/application-private.yml은 기존 파일을 그대로 사용하세요.
+추가 SQL 없음. 12번 SQL을 실행하거나 사무실 파일 폴더를 복사할 필요가 없습니다.
+프로젝트/셀 데이터와 DB 파일 목록은 공유하고 원본은 각 실행 PC에 저장합니다.
+없는 원본은 ‘이 PC에 파일 없음’으로 표시되며, 파일 교체로 작업 연결을 유지할 수 있습니다.
+Windows D드라이브가 있으면 D:/AxPlatform/dev, Mac은 사용자 홈/AxPlatform/dev에 자동 생성합니다.
+
+상세: docs/V061_APPLY.txt
+검증/한계: docs/V061_VALIDATION.txt

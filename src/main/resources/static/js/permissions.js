@@ -1,15 +1,15 @@
 import {
   request
 }
-from './request.js?v=0.6.0';
+from './request.js?v=0.9.1';
 import {
   el,button,message,busy,bool,whenText
 }
-from './ui.js?v=0.6.0';
+from './ui.js?v=0.9.1';
 import {
   TIERS,available,dependencyAdd,dependencyRemove
 }
-from './policy-model.js?v=0.6.0';
+from './policy-model.js?v=0.9.1';
 const status=document.getElementById('policy-status'),reason=document.getElementById('policy-reason'),review=document.getElementById('policy-review'),editor=document.getElementById('catalog-editor');
 const catalogSelected=new Set();
 let snapshot,grants,dirty=false,sourceVersion=null,reviewBody=null,editing=null,cacheKey='';

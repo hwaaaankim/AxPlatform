@@ -36,8 +36,9 @@ public final class ProposalRules {
             else {
                 Map<String,Object> table=object(sheet);
                 // AI proposals must carry stable row identities; inventing UUIDs here breaks apply idempotency.
-                exact(table,Set.of("columns","rows","rowIds"));
-                out.put("sheet",SheetRules.normalize(table));
+                if(!table.keySet().containsAll(Set.of("columns","rows","rowIds"))||!Set.of("columns","rows","rowIds","excel").containsAll(table.keySet()))throw bad("제안 표 항목을 확인하세요.");
+                if(table.containsKey("excel")&&!Set.of("formulas").containsAll(object(table.get("excel")).keySet()))throw bad("AI 제안에는 셀 수식만 포함할 수 있습니다.");
+                var valid=SheetRules.normalize(com.axplatform.sheet.ExcelCells.aiFormulas(table,0));int rowCount=((List<?>)valid.get("rows")).size(),cols=((List<?>)valid.get("columns")).size();if(rowCount>200||(long)rowCount*cols>4000)throw bad("AI 제안은 최대 200행·4,000셀입니다.");out.put("sheet",valid);
             }
         }
         catch(RuntimeException invalid){throw bad("제안 표의 열·행·셀·식별자 형식을 확인해 주세요.");}

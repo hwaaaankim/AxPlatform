@@ -1,27 +1,28 @@
-import {chooseSource} from './source-chooser.js?v=0.6.0';
-import {fileSize} from './file-picker.js?v=0.6.0';
-import {createWorkflowFlow} from './workflow-flow.js?v=0.6.0';
+import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
+import {chooseSource} from './source-chooser.js?v=0.9.1';
+import {fileSize} from './file-picker.js?v=0.9.1';
+import {createWorkflowFlow} from './workflow-flow.js?v=0.9.1';
 import {
   request
-} from './request.js?v=0.6.0';
+} from './request.js?v=0.9.1';
 import {
   el,button,message
-} from './ui.js?v=0.6.0';
+} from './ui.js?v=0.9.1';
 import {
   watch
-} from './events.js?v=0.6.0';
+} from './events.js?v=0.9.1';
 import {
   editState
-} from './edit-state.js?v=0.6.0';
+} from './edit-state.js?v=0.9.1';
 import {
   createGuide,fields
-} from './workflow-guide.js?v=0.6.0';
+} from './workflow-guide.js?v=0.9.1';
 import {
   createAiPanel
-} from './guided-ai.js?v=0.6.0';
+} from './guided-ai.js?v=0.9.1';
 import {
   createSheetEditor
-} from './sheet-editor.js?v=0.6.0';
+} from './sheet-editor.js?v=0.9.1';
 const root=document.getElementById('draft-root'),business=Number(root.dataset.businessId),workspace=Number(root.dataset.workspaceId),workflow=root.dataset.workflow,form=document.getElementById('draft-form'),status=document.getElementById('draft-status');
 let id=root.dataset.draftId,record={
   version:0,status:'DRAFT',answers:{
@@ -31,9 +32,7 @@ const can=action=>caps.has('workspace.draft.'+action),getInput=()=>({
   title:document.getElementById('draft-title').value,answers:guide.values(),assetIds:[...document.querySelectorAll('#draft-assets input:checked')].map(x=>x.value)
 });
 const guide=createGuide(document.getElementById('questions'),workflow,{
-  onChange:changed,onSummary:()=>document.getElementById('draft-summary').scrollIntoView({
-    behavior:'instant',block:'start'
-  })
+  onChange:changed,onSummary:()=>flow?.basicsNext()
 });
 const label=guide.guide.name;
 const hasChanges=()=>dirty||!!sheet?.dirty();
@@ -43,7 +42,7 @@ function summary(){
   host.replaceChildren();
   for(const [key,name]of fields){
     const section=el('div','','summary-entry');
-    section.append(button(name+' 수정',()=>{flow?.go('prepare');guide.open(key);},'button small quiet'),el('p',document.getElementById('answer-'+key).value||'미확인 · 나중에 작성할 수 있습니다.','muted'));
+    if(!document.getElementById('answer-'+key).value.trim())continue;section.append(button('✎ '+name+' 수정',()=>{flow?.go('basics');document.getElementById('flow-question-options').open=true;guide.open(key);},'button small quiet'),el('p',document.getElementById('answer-'+key).value||'미확인 · 나중에 작성할 수 있습니다.','muted'));
     host.append(section);
   }
 }
@@ -67,8 +66,8 @@ function fail(error){
 }
 function controls(){
   const archived=record.status==='ARCHIVED',blocked=isBusy();
-  form.querySelectorAll('input,textarea').forEach(x=>x.disabled=blocked||archived||!can('update'));
-  form.querySelectorAll('#questions button,#draft-assets button').forEach(x=>x.disabled=blocked||archived||!can('update'));
+  root.querySelectorAll('#draft-form input,#draft-form textarea,#draft-assets input').forEach(x=>x.disabled=blocked||archived||!can('update'));
+  root.querySelectorAll('#questions button,#draft-assets button').forEach(x=>x.disabled=blocked||archived||!can('update'));
   document.getElementById('draft-update').disabled=blocked||archived||(!id?!can('create')||!can('update'):!can('update'));
   document.getElementById('draft-save').disabled=blocked||archived||!can('save')||(!id&&(!can('create')||!can('update')));
   document.getElementById('draft-cancel').disabled=blocked||archived||!id||!can('cancel');
@@ -99,9 +98,9 @@ async function assetOptions(selected=[]){
   const all=button('내 자료에서 추가',async()=>{if(!editable())return;chooseSource({business,project:id,workflow,onChoose:async items=>{const ids=[...new Set([...getInput().assetIds,...items.map(a=>a.id)])];if(ids.length>20)throw new Error('작업 자료는 최대 20개입니다. 기존 연결을 해제하고 선택하세요.');await assetOptions(ids);changed();}});},'button small');
   const clear=button('첨부 전체 해제',()=>{if(!editable())return;checks.forEach(x=>x.cb.checked=false);refresh();changed();},'button small quiet');
   const reload=button('등록 목록 새로고침',()=>assetOptions(getInput().assetIds).then(controls).catch(fail),'button small');
-  function refresh(){const chosen=checks.filter(x=>x.cb.checked);counter.textContent=`이 작업의 자료 ${chosen.length} / 20개`;chips.replaceChildren();for(const {cb,name} of chosen){const chip=el('span','','attachment-chip'),remove=button('×',()=>{if(!editable())return;cb.checked=false;refresh();changed();},'file-remove');remove.setAttribute('aria-label',name+' 업무 첨부 해제');remove.disabled=!editable();chip.append(el('span',name),remove);chips.append(chip);}all.disabled=!editable();clear.disabled=!editable()||!chosen.length;}
-  function item(id,name,archived=false,bytes=null){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=id;cb.checked=selected.includes(id);cb.addEventListener('change',()=>{if(checks.filter(x=>x.cb.checked).length>20){cb.checked=false;message(status,'업무 첨부는 최대 20개입니다. 기존 첨부를 해제하고 선택하세요.',true);}else changed();refresh();});label.append(cb,el('span',name+(bytes!==null?' · '+fileSize(Number(bytes)):'')+(archived?' · 삭제됨 · 복원하거나 첨부를 해제하세요.':'')));checks.push({cb,name,archived});label.hidden=true;options.append(label);}
-  for(const a of list){if(a.archived_at&&!selected.includes(a.id))continue;seen.add(a.id);item(a.id,a.original_name,!!a.archived_at,a.byte_size);}
+  function refresh(){const chosen=checks.filter(x=>x.cb.checked);counter.textContent=`이 작업의 자료 ${chosen.length} / 20개`;chips.replaceChildren();for(const {cb,name,asset} of chosen){const chip=el('span','','attachment-chip'),remove=button('×',()=>{if(!editable())return;cb.checked=false;refresh();changed();},'file-remove');remove.setAttribute('aria-label',name+' 업무 첨부 해제');remove.disabled=!editable();chip.append(el('span',name));if(asset&&locallyMissing(asset)){chip.append(el('small',localLabel(asset),'missing-file-badge'));if(caps.has('workspace.asset.upload')&&caps.has('workspace.asset.archive')){const replace=button('파일 교체',()=>replaceAsset(asset,{onReplaced:async()=>{await assetOptions(getInput().assetIds);await ai?.refreshAssets();controls();}}),'button small');replace.disabled=!editable();chip.append(replace);}}chip.append(remove);chips.append(chip);}all.disabled=!editable();clear.disabled=!editable()||!chosen.length;}
+  function item(id,name,archived=false,bytes=null,asset=null){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=id;cb.checked=selected.includes(id);cb.addEventListener('change',()=>{if(checks.filter(x=>x.cb.checked).length>20){cb.checked=false;message(status,'업무 첨부는 최대 20개입니다. 기존 첨부를 해제하고 선택하세요.',true);}else changed();refresh();});label.append(cb,el('span',name+(bytes!==null?' · '+fileSize(Number(bytes)):'')+(archived?' · 삭제됨 · 복원하거나 첨부를 해제하세요.':'')));checks.push({cb,name,archived,asset});label.hidden=true;options.append(label);}
+  for(const a of list){if(a.archived_at&&!selected.includes(a.id))continue;seen.add(a.id);item(a.id,a.original_name,!!a.archived_at,a.byte_size,a);}
   for(const value of selected.filter(x=>!seen.has(x)))item(value,'조회되지 않는 기존 첨부 · 목록에서 확인하세요.');
   toolbar.append(counter,all,clear,reload);host.append(toolbar,chips,options,el('small','×와 전체 해제는 이 업무의 첨부 선택만 바꿉니다. 저장 시 반영되며, 원본 파일 삭제·복원은 내 자료에서 처리합니다.','muted'));
   if(!checks.length)options.append(el('p','등록된 자료가 없습니다. 위에서 자료를 등록한 뒤 첨부하세요.','muted'));refresh();
@@ -260,7 +259,7 @@ const modeHost=document.getElementById('workflow-modes');
 document.getElementById('workflow-intro').textContent=guide.guide.intro;
 const modes=workflow==='EXCEL'?[['photo','사진에서 시작','전표·표 사진을 AI와 함께 확인합니다.','▧'],['guided','대화로 만들기','필요한 업무를 선택지와 짧은 대화로 정리합니다.','✧'],['upload','엑셀·CSV 가져오기','기존 파일의 열과 데이터를 확인해 연결합니다.','↥'],['direct','직접 표 만들기','빈 표나 기본 열 구성으로 바로 편집합니다.','⊞']]:[['guided','안내에 따라 정리','선택지로 목적과 필요한 조건부터 정합니다.','✧'],['direct','직접 작성·수정','요약 항목을 직접 고르고 구체적으로 작성합니다.','↗']];
 modes.forEach(([value,name,copy,symbol])=>{const b=button('',()=>flow?.select(value),'mode-card');b.dataset.mode=value;b.setAttribute('aria-pressed','false');b.append(el('span',symbol,'mode-symbol'),el('strong',name),el('span',copy));modeHost.append(b);});
-document.getElementById('workflow-scope').textContent=workflow==='EXCEL'?'지원: 프로젝트당 20시트, 시트별 20열·200행 편집, 사진별 시트·대화 AI 제안, 다중 시트 XLSX·CSV 가져오기, 사칙연산 계산 열, 서버 집계·저장한 보기, 데이터/빈 양식 XLSX. PDF·XLS·임의 Excel 함수·대규모 데이터·다단계 복구는 지원 범위 밖입니다.':'현재는 요구사항 정리·첨부·AI 제안·저장·재사용을 지원합니다. 실제 문서 출력, CRM 운영, 일정·발송, 실행 프로그램 생성 엔진은 아직 준비 중입니다.';
+document.getElementById('workflow-scope').textContent=workflow==='EXCEL'?'지원: 프로젝트당 20시트, 시트별 100열·50,000행·100만 셀 편집, 사진별 시트·대화 AI 제안, 다중 시트 XLSX·CSV 가져오기, 원본 Excel 수식·계산 열, 데이터 센터·AND 필터·다중 집계·저장한 보기, 데이터/빈 양식 XLSX. PDF·XLS·임의 Excel 함수·다단계 복구는 지원 범위 밖입니다.':'현재는 요구사항 정리·첨부·AI 제안·저장·재사용을 지원합니다. 실제 문서 출력, CRM 운영, 일정·발송, 실행 프로그램 생성 엔진은 아직 준비 중입니다.';
 for(const[key,name]of[['title','초안 이름'],...fields,['assets','첨부 선택']]){
   const l=el('label','','check'),cb=el('input');
   cb.type='checkbox';
@@ -360,8 +359,9 @@ request('/api/me').then(async me=>{
   await reload();
   flow=createWorkflowFlow(root,{
     id:()=>id,ensureDraft:async()=>{if(!id&&!document.getElementById('draft-title').value.trim())document.getElementById('draft-title').value=workflow==='EXCEL'?'새 엑셀 작업':'새 업무 작업';await ensureDraft();return id;},sheet:()=>sheet,assetIds:()=>getInput().assetIds,photoTargets:ids=>ai?.preparePhotoSheets(ids).catch(error=>message(status,error.message,true)),caps:()=>caps,dirty:hasChanges,active:()=>record.status!=='ARCHIVED'&&!isBusy(),setBusy:externalBusy,
-    setMode:value=>{mode=value;guide.setMode(value==='upload'?'direct':value);},
+    resumeGuide:()=>guide.resume(),setMode:value=>{mode=value;guide.setMode(value==='upload'?'direct':value);},
     async refreshAssets(assetIds){const selected=getInput().assetIds;for(const assetId of Array.isArray(assetIds)?assetIds:[assetIds])if(assetId&&!selected.includes(assetId)&&selected.length<20)selected.push(assetId);await assetOptions(selected);changed();await ai.refreshAssets();if(selected.length===20)message(status,'업무 첨부 한도 20개입니다. 추가 등록 원본은 내 자료에 보관되며 필요할 때 바꿔 선택하세요.');},
+    async refreshSheet(){await readVersionAfterWrite();await sheet.load({force:true});ai?.refreshSheetTargets();},askAi:(text,sheetId)=>{sheet?.selectSheet(sheetId);flow?.showAi();ai?.setRequest(text,sheetId);},
     async saveAll(){if(workflow==='EXCEL'&&!sheet?.hasColumns())throw new Error('먼저 열을 한 개 이상 추가해 주세요. 데이터가 없는 빈 양식도 저장할 수 있습니다.');if(sheet?.dirty())await sheet.save();await mutate(async()=>{await ensureDraft();record=await request(`/api/drafts/${encodeURIComponent(id)}/save`,{method:'POST',body:{version:record.version}});dirty=false;cache?.clear();controls();});}
   });
   flow.ready();

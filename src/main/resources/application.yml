@@ -1,14 +1,10 @@
-# AxPlatform 0.5.0 공통 설정
-# 실행 위치는 pom.xml이 있는 프로젝트 루트입니다.
-# DB 접속값·키·비밀번호는 ./config/application-private.yml에서 필수로 읽습니다.
-# 기본 프로파일: dev / 서버 프로파일: test
-# 기본 회원 용량 1GiB, 활동 로그 180일, 파일 로그 30일·총 1GiB.
 spring:
   profiles:
     default: dev
   application:
     name: AxPlatform
   config:
+    # Deliberately required: absent private config must not connect to an unintended DB.
     import: 'file:./config/application-private.yml'
   jpa:
     open-in-view: false
@@ -32,8 +28,6 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 20MB
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
 server:
   servlet:
     session:
@@ -42,10 +36,9 @@ server:
         http-only: true
         same-site: lax
   forward-headers-strategy: none
-  port: 8080
 logging:
   file:
-    name: '${ax.storage.root}/logs/application.log'
+    name: ${AX_LOG_ROOT:${user.home}/AxPlatform/logs}/application.log
   logback:
     rollingpolicy:
       max-history: 30
@@ -55,15 +48,20 @@ logging:
     root: INFO
     org.hibernate.SQL: WARN
     org.springframework.security: WARN
+
+# Public defaults. Private credentials override only their matching keys.
 ax:
   storage:
-    legacy-root: ./data/private
+    # DB는 공유하고 원본은 각 PC에 보관. 단일 저장소 강제 검사는 strict.
+    binding-mode: per-device
+    legacy-root: ${ax.storage-root:./data/private}
     default-quota-bytes: 1073741824
   operations:
     activity-retention-days: 180
   integrations:
     openai:
       enabled: true
+      api-key: ''
       model: gpt-6-astra
       reasoning-effort: high
       max-output-tokens: 16000
@@ -74,31 +72,3 @@ ax:
       max-concurrent-runs: 2
       worker-threads: 2
       job-timeout-seconds: 300
-    google-login:
-      enabled: false
-    kakao-login:
-      enabled: false
-    naver-login:
-      enabled: false
-    smtp:
-      enabled: false
-      port: 587
-      auth: true
-      starttls: true
-      starttls-required: true
-      ssl: false
-    cafe24:
-      enabled: false
-    solapi:
-      enabled: false
-    toss:
-      enabled: false
-    document-editor:
-      enabled: false
-    hwp:
-      enabled: false
-  display-name: AxPlatform
-  auth:
-    registration-enabled: false
-    terms-version: 2026-10-09-DRAFT
-    privacy-version: 2026-10-09-DRAFT

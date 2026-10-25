@@ -1,8 +1,8 @@
-import {request} from './request.js?v=0.6.0';
-import {el,button,message,whenText} from './ui.js?v=0.6.0';
+import {request} from './request.js?v=0.9.1';
+import {el,button,message,whenText} from './ui.js?v=0.9.1';
 const $=id=>document.getElementById(id),status=$('operations-status');let settings={},pending=false;
 const num=n=>Number(n||0).toLocaleString('ko-KR'),money=n=>n===null||n===undefined?'단가·비용 미확인':'$'+Number(n).toFixed(6);
-const names={'DASHBOARD_VIEW':'업무 홈 방문','WORK_START_VIEW':'새 작업 화면','WORK_OPEN':'기존 작업 열기','FILES_VIEW':'내 자료 방문','FILE_DOWNLOAD':'다운로드','SHEET_IMPORT_PREVIEW':'엑셀 가져오기 미리보기','draft.created':'작업 생성','draft.updated':'초안 저장','draft.saved':'내용 확정 저장','sheet.updated':'표 저장','asset.uploaded':'자료 등록','asset.archived':'휴지통 이동','asset.purged':'영구 삭제','ai.ready':'AI 제안 생성','ai.applied':'AI 제안 적용','ai.failed':'AI 처리 실패'};
+const names={'DASHBOARD_VIEW':'업무 홈 방문','WORK_START_VIEW':'새 작업 화면','WORK_OPEN':'기존 작업 열기','FILES_VIEW':'내 자료 방문','FILE_DOWNLOAD':'다운로드','SHEET_IMPORT_PREVIEW':'엑셀 가져오기 미리보기','draft.created':'작업 생성','draft.updated':'초안 저장','draft.saved':'내용 확정 저장','sheet.updated':'표 저장','asset.replaced':'자료 원본 교체','asset.uploaded':'자료 등록','asset.archived':'휴지통 이동','asset.purged':'영구 삭제','ai.ready':'AI 제안 생성','ai.applied':'AI 제안 적용','ai.failed':'AI 처리 실패'};
 function table(id,columns,rows){const target=$(id);target.replaceChildren();if(!rows.length){target.append(el('p','해당 기간에 기록된 내역이 없습니다.','empty'));return;}const t=el('table'),head=el('thead'),hr=el('tr');columns.forEach(c=>hr.append(el('th',c[1])));head.append(hr);const body=el('tbody');for(const r of rows){const tr=el('tr');for(const [k,,format]of columns)tr.append(el('td',format?format(r[k],r):r[k]??'—'));body.append(tr);}t.append(head,body);target.append(t);}
 function metric(host,label,value,note){const m=el('div','','metric');m.append(el('small',label),el('strong',value));if(note)m.append(el('span',note));host.append(m);}
 function bars(id,rows,key,label){const host=$(id);host.replaceChildren();const max=Math.max(1,...rows.map(r=>Number(r[key])));for(const r of rows.slice(0,14)){const row=el('div','','usage-bar'),m=el('meter');m.max=max;m.value=Number(r[key]);m.setAttribute('aria-label',label(r)+' '+r[key]+'회');row.append(el('span',label(r)),m,el('strong',num(r[key])));host.append(row);}if(!rows.length)host.append(el('p','아직 집계할 활동이 없습니다.','empty'));}

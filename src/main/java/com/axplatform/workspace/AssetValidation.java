@@ -19,7 +19,7 @@ public final class AssetValidation {
         String lower = name.toLowerCase(Locale.ROOT);
         if (lower.endsWith(".xlsx") || lower.endsWith(".csv")) {
             if (lower.endsWith(".xlsx"))
-                com.axplatform.sheet.SheetImport.read(bytes, name, "UTF-8", "");
+                com.axplatform.sheet.SheetImport.validatePackage(bytes);
             else {
                 if (bytes.length > 2 * 1024 * 1024) throw new IOException("CSV는 2MB 이하입니다.");
                 for (byte b : bytes) if (b == 0) throw new IOException("CSV에 바이너리 문자가 있습니다.");

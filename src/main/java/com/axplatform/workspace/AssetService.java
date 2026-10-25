@@ -28,7 +28,7 @@ public class AssetService {
     private final TransactionTemplate tx;
     private final JsonCodec json;
     private static final String PUBLIC =
-            "a.id,a.business_scope_id,a.original_name,a.media_type,a.byte_size,a.version,a.archived_at,a.created_at,a.scope_kind,a.workflow,a.project_id,a.purpose,a.storage_state,d.title"
+            "a.id,a.business_scope_id,a.original_name,a.media_type,a.byte_size,a.version,a.archived_at,a.created_at,a.scope_kind,a.workflow,a.project_id,a.purpose,a.storage_state,a.root_kind,a.disk_key,d.title"
                 + " AS project_title,b.name AS business_name";
 
     public AssetService(
@@ -88,7 +88,7 @@ public class AssetService {
                         args.add(d.get("workflow"));
                         args.add(project);
                     }
-                    return db.queryForList(
+                    return listed(db.queryForList(
                             "SELECT "
                                     + PUBLIC
                                     + " FROM ap_asset a LEFT JOIN ap_work_draft d ON"
@@ -97,7 +97,7 @@ public class AssetService {
                                     + " a.owner_account_id=? AND a.storage_state='READY'"
                                     + where
                                     + " ORDER BY a.created_at DESC,a.id LIMIT 200",
-                            args.toArray());
+                            args.toArray()), false);
                 });
     }
 
@@ -128,7 +128,7 @@ public class AssetService {
                         args.add(d.get("workflow"));
                         args.add(project);
                     }
-                    return db.queryForList(
+                    return listed(db.queryForList(
                             "SELECT "
                                     + PUBLIC
                                     + " FROM ap_asset a LEFT JOIN ap_work_draft d ON"
@@ -136,7 +136,7 @@ public class AssetService {
                                     + " b.id=a.business_scope_id WHERE "
                                     + where
                                     + " ORDER BY a.created_at DESC,a.id",
-                            args.toArray());
+                            args.toArray()), false);
                 });
     }
 
@@ -202,7 +202,7 @@ public class AssetService {
                                             + where
                                             + " ORDER BY a.created_at DESC,a.id LIMIT 25 OFFSET ?",
                                     args.toArray());
-                    return Map.of("items", items, "total", total, "page", p, "pages", pages);
+                    return Map.of("items", listed(items, false), "total", total, "page", p, "pages", pages);
                 });
     }
 
@@ -416,6 +416,140 @@ public class AssetService {
         return storage.resolve((String) r.get("root_kind"), (String) r.get("disk_key"));
     }
 
+    private static Problem missing() {
+        return new Problem(404, "STORAGE_MISSING",
+                "이 PC에 원본 파일이 없습니다. 내 자료에서 파일을 교체하거나 새 자료를 등록하세요. 저장된 작업 내용은 계속 편집할 수 있습니다.");
+    }
+
+    /** Availability is a response field, never a global DB state: another PC may have the file. */
+    private List<Map<String, Object>> listed(List<Map<String, Object>> rows, boolean admin) {
+        for (var r : rows) {
+            String status;
+            try {
+                Path p = path(r);
+                if (admin) r.put("absolute_path", p.toString());
+                if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) status = "MISSING";
+                else if (!Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(p)) status = "UNAVAILABLE";
+                else status = Files.size(p) == Inputs.number(r, "byte_size") ? "AVAILABLE" : "INVALID";
+            } catch (IOException | RuntimeException e) {
+                status = "UNAVAILABLE";
+                if (admin) r.put("absolute_path", "현재 PC의 저장 경로를 확인하세요.");
+            }
+            r.put("local_status", status);
+            r.put("file_exists", "AVAILABLE".equals(status));
+            if (!admin) { r.remove("root_kind"); r.remove("disk_key"); }
+        }
+        return rows;
+    }
+
+    private static String family(String type) {
+        if (Set.of("image/png", "image/jpeg").contains(type)) return "IMAGE";
+        if (Set.of("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").contains(type)) return "TABLE";
+        return type;
+    }
+
+    public Map<String, Object> replace(SessionSubject s, String id, MultipartFile upload, long expectedVersion, boolean admin) {
+        var before = row(id);
+        replacementAccess(s, before, admin);
+        String filename = safeName(upload.getOriginalFilename());
+        final AssetValidation.Prepared file;
+        try {
+            if (upload.getSize() > 10 * 1024 * 1024) throw new IOException("파일당 10MB 이하입니다.");
+            file = AssetValidation.validate(filename, upload.getBytes());
+        } catch (IOException e) { throw new Problem(422, "ASSET_FORMAT", e.getMessage()); }
+        String[] written = {null};
+        Path[] replacedPath = {null};
+        Map<String, Object> result;
+        try {
+            result = tx.execute(t -> {
+                policies.state(true);
+                replacementAccess(s, before, admin);
+                long owner = Inputs.number(before, "owner_account_id");
+                limits.lock(owner);
+                var current = row(id);
+                version(current, expectedVersion);
+                // A malformed/unavailable old path must not prevent repair with a safe new key.
+                try { replacedPath[0] = path(current); } catch (RuntimeException ignored) { }
+                if (!"READY".equals(current.get("storage_state")) || current.get("archived_at") != null)
+                    throw Problem.conflict("휴지통 자료는 복원한 후 교체하세요.");
+                if (!family((String) current.get("media_type")).equals(family(file.mediaType())))
+                    throw Problem.invalid("같은 종류로 교체하세요: 사진은 PNG/JPG, 표는 XLSX/CSV, 텍스트는 TXT입니다.");
+                if ("PROJECT".equals(current.get("scope_kind")) && db.queryForObject(
+                        "SELECT COUNT(*) FROM ap_work_draft WHERE id=? AND status='ARCHIVED'", Integer.class,
+                        current.get("project_id")) > 0) throw Problem.conflict("보관된 작업은 복원한 후 원본을 교체하세요.");
+                if (db.queryForObject("SELECT COUNT(*) FROM ap_ai_run WHERE status IN ('QUEUED','RUNNING') AND request_json LIKE ?",
+                        Integer.class, "%" + id + "%") > 0)
+                    throw Problem.conflict("이 자료를 사용하는 AI 작업이 실행 중입니다. 완료하거나 취소한 후 교체하세요.");
+                long growth = file.data().length - Inputs.number(current, "byte_size");
+                if (growth > 0) limits.admitFile(owner, growth);
+                // A fresh key prevents a previous computer's stale bytes from masquerading as the replacement.
+                String key = storage.key(owner, Inputs.number(current, "business_scope_id"),
+                        (String) current.get("scope_kind"), (String) current.get("workflow"),
+                        (String) current.get("project_id"), (String) current.get("purpose"),
+                        UUID.randomUUID().toString(), file.extension());
+                try {
+                    storage.memberFolders(owner);
+                    storage.write(key, file.data());
+                    written[0] = key;
+                } catch (IOException e) { throw new Problem(503, "STORAGE_UNAVAILABLE", "파일을 저장하지 못했습니다. 기존 자료는 유지됩니다."); }
+                if (db.update("UPDATE ap_asset SET original_name=?,disk_key=?,root_kind='MANAGED',media_type=?,byte_size=?,sha256=?,version=version+1 WHERE id=? AND version=?",
+                        filename, key, file.mediaType(), file.data().length, ManagedStorage.sha(file.data()), id, expectedVersion) != 1)
+                    throw Problem.conflict("자료가 변경되었습니다. 목록을 새로고침하세요.");
+                // A reviewed but unapplied proposal belongs to the previous original.
+                for (var run : db.queryForList("SELECT id,workspace_id,business_scope_id FROM ap_ai_run WHERE status='READY' AND request_json LIKE ?", "%" + id + "%")) {
+                    db.update("UPDATE ap_ai_run SET status='FAILED',phase='원본 교체됨',safe_error_code='AI_SOURCE_CHANGED',safe_message=?,updated_at=? WHERE id=? AND status='READY'",
+                            "원본 파일이 교체되어 이전 제안을 적용할 수 없습니다. 새 원본으로 다시 검토해 주세요.", now(), run.get("id"));
+                    access.event(Inputs.number(run, "workspace_id"), Inputs.number(run, "business_scope_id"), "ai.failed", (String) run.get("id"), 0);
+                }
+                limits.audit(s, "ASSET_REPLACE", id, "현재 PC에 새 원본 저장 · 자료 연결 유지",
+                        Map.of("version", expectedVersion, "bytes", current.get("byte_size")),
+                        Map.of("version", expectedVersion + 1, "bytes", file.data().length));
+                access.event(Inputs.number(current, "workspace_id"), Inputs.number(current, "business_scope_id"),
+                        "asset.replaced", id, expectedVersion + 1);
+                return Map.<String,Object>of("id", id, "version", expectedVersion + 1, "name", filename,
+                        "bytes", file.data().length, "local_status", "AVAILABLE");
+            });
+        } catch (RuntimeException e) {
+            if (written[0] != null) try {
+                if (db.queryForObject("SELECT COUNT(*) FROM ap_asset WHERE disk_key=?", Integer.class, written[0]) == 0)
+                    Files.deleteIfExists(storage.resolve("MANAGED", written[0]));
+            } catch (Exception ignored) { }
+            throw e;
+        }
+        // Only this PC's superseded original can be removed. Remote disks are never scanned.
+        boolean oldLocalRemoved = replacedPath[0] != null;
+        try { if (replacedPath[0] != null) Files.deleteIfExists(replacedPath[0]); }
+        catch (IOException | RuntimeException e) { oldLocalRemoved = false; }
+        var response = new LinkedHashMap<>(result);
+        response.put("oldLocalRemoved", oldLocalRemoved);
+        return response;
+    }
+
+    private void replacementAccess(SessionSubject s, Map<String, Object> r, boolean admin) {
+        if (admin) limits.admin(s);
+        else {
+            owner(s, r);
+            access.business(s, Inputs.number(r, "business_scope_id"), false,
+                    List.of("workspace.asset.upload", "workspace.asset.archive"), () -> null);
+        }
+    }
+
+    public record Preview(String mediaType, byte[] bytes) { }
+
+    public Preview preview(SessionSubject s, String id, boolean admin) {
+        var r = admin ? adminMetadata(s, id) : metadata(s, id);
+        if (!Set.of("image/png", "image/jpeg").contains(r.get("media_type")))
+            throw Problem.invalid("사진 자료만 미리 볼 수 있습니다.");
+        try {
+            byte[] bytes = storage.read((String) r.get("root_kind"), (String) r.get("disk_key"),
+                    Inputs.number(r, "byte_size"), (String) r.get("sha256"));
+            var current = admin ? adminMetadata(s, id) : metadata(s, id);
+            version(current, Inputs.number(r, "version"));
+            return new Preview((String) r.get("media_type"), bytes);
+        } catch (NoSuchFileException e) { throw missing(); }
+        catch (IOException e) { throw new Problem(409, "STORAGE_INTEGRITY", "원본을 읽을 수 없습니다. 파일을 교체해 주세요."); }
+    }
+
     public Map<String, Object> metadata(SessionSubject s, String id) {
         var r = row(id);
         owner(s, r);
@@ -430,7 +564,7 @@ public class AssetService {
                             || !"READY".equals(current.get("storage_state")))
                         throw new Problem(404, "ASSET_ARCHIVED", "휴지통 또는 삭제 처리 중인 자료입니다.");
                     if (!Files.isRegularFile(path(current), LinkOption.NOFOLLOW_LINKS))
-                        throw new Problem(503, "STORAGE_MISSING", "원본 파일을 찾지 못했습니다. 관리자에게 문의하세요.");
+                        throw missing();
                     return current;
                 });
     }
@@ -448,8 +582,10 @@ public class AssetService {
             if (Inputs.number(after, "version") != Inputs.number(r, "version"))
                 throw Problem.conflict("자료 상태가 변경되었습니다.");
             return b;
+        } catch (NoSuchFileException e) {
+            throw missing();
         } catch (IOException e) {
-            throw new Problem(503, "STORAGE_INTEGRITY", "자료 원본의 크기·무결성을 확인하지 못했습니다.");
+            throw new Problem(409, "STORAGE_INTEGRITY", "이 PC의 원본이 등록된 자료와 다릅니다. 내 자료에서 파일을 교체해 주세요.");
         }
     }
 
@@ -493,7 +629,7 @@ public class AssetService {
         if (!"READY".equals(r.get("storage_state")))
             throw new Problem(404, "ASSET_NOT_FOUND", "다운로드 가능한 원본이 없습니다.");
         if (!Files.isRegularFile(path(r), LinkOption.NOFOLLOW_LINKS))
-            throw new Problem(503, "STORAGE_MISSING", "원본 파일을 찾지 못했습니다.");
+            throw missing();
         return r;
     }
 
@@ -674,22 +810,13 @@ public class AssetService {
                 db.queryForList(
                         "SELECT "
                                 + PUBLIC
-                                + (admin ? ",a.owner_account_id,a.root_kind,a.disk_key" : "")
+                                + (admin ? ",a.owner_account_id" : "")
                                 + " FROM ap_asset a LEFT JOIN ap_work_draft d ON d.id=a.project_id"
                                 + " JOIN ap_business_scope b ON b.id=a.business_scope_id"
                                 + where
                                 + " ORDER BY a.created_at DESC,a.id LIMIT 25 OFFSET ?",
                         queryArgs.toArray());
-        if (admin)
-            for (var f : files) {
-                try {
-                    f.put("absolute_path", path(f).toString());
-                    f.put("file_exists", Files.isRegularFile(path(f), LinkOption.NOFOLLOW_LINKS));
-                } catch (RuntimeException bad) {
-                    f.put("absolute_path", "경로 검증 실패");
-                    f.put("file_exists", false);
-                }
-            }
+        listed(files, admin);
         return Map.of(
                 "items",
                 files,

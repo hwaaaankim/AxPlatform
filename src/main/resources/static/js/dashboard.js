@@ -1,16 +1,16 @@
-import {decorateIcons} from './app-shell.js?v=0.6.0';
+import {decorateIcons} from './app-shell.js?v=0.9.1';
 import {
   request
 }
-from './request.js?v=0.6.0';
+from './request.js?v=0.9.1';
 import {
   el,button,message,busy,whenText,bool
 }
-from './ui.js?v=0.6.0';
+from './ui.js?v=0.9.1';
 import {
   watch
 }
-from './events.js?v=0.6.0';
+from './events.js?v=0.9.1';
 const root=document.getElementById('dashboard-root'),workspace=Number(root.dataset.workspaceId),status=document.getElementById('dashboard-status'),selection=document.getElementById('business-select');
 const workflows= {
   EXCEL:['엑셀 · 데이터','표 만들기부터 계산·데이터 분석까지'],WORD:['워드','작성할 문서의 목적과 구성'],HWP:['한글','보고서·공문 작성의 요구사항'],PPT:['프레젠테이션','발표 목적과 청중·자료'],CRM:['고객관리','고객·영업 관리의 요구사항'],CALENDAR:['일정','시간·업무 일정의 요구사항'],APP:['앱 제작','만들고 싶은 앱의 요구사항']
@@ -25,12 +25,12 @@ let scopes=[],caps=new Set(),dash= {
 ,stopEvents,sequence=0,refreshTimer;
 const can=code=>caps.has('workspace.'+code),current=()=>scopes.find(s=>String(s.id)===selection.value);
 const active=()=>current()&&!current().archived_at;
-async function permissions() {
-  const own=await request(`/api/workspaces/${workspace}/access`);
+async function permissions(loading=true) {
+  const own=await request(`/api/workspaces/${workspace}/access`,{loading});
   caps=new Set(own.capabilities);
   document.getElementById('space-meta').textContent=own.tier==='ADMIN'?'관리자 업무 검토 공간':'내 업무 공간 · '+({GUEST:'게스트',TIER1:'1단계',TIER2:'2단계',TIER3:'3단계'}[own.tier]||own.tier);
   try {
-    if(can('dashboard.read'))dash=await request(`/api/workspaces/${workspace}/dashboard`);
+    if(can('dashboard.read'))dash=await request(`/api/workspaces/${workspace}/dashboard`,{loading});
   }
   catch(e) {
     message(status,e.message,true);
@@ -68,14 +68,14 @@ function renderWorkflows() {
   }
   decorateIcons(grid);
 }
-async function loadScopes() {
+async function loadScopes(loading=true) {
   if(!can('scope.read')) {
     scopes=[];
     selection.replaceChildren(el('option','사업 조회 권한이 없습니다.'));
     return;
   }
   const old=selection.value||params.get('businessId');
-  scopes=await request('/api/business-scopes?workspaceId='+workspace);
+  scopes=await request('/api/business-scopes?workspaceId='+workspace,{loading});
   selection.replaceChildren();
   for(const s of scopes) {
     if(s.archived_at&&!document.getElementById('show-archived-scopes').checked)continue;
@@ -86,7 +86,7 @@ async function loadScopes() {
   if([...selection.options].some(x=>x.value===old))selection.value=old;
   else selection.value=String(scopes.find(s=>!s.archived_at)?.id||selection.options[0]?.value||'');
 }
-async function drafts() {
+async function drafts(loading=true) {
   const host=document.getElementById('draft-list');
   if(!active()||!can('draft.list')) {
     host.replaceChildren(el('p',active()?'초안 목록 권한이 없습니다.':'보관 사업은 먼저 복원해 주세요.','muted'));
@@ -96,7 +96,7 @@ async function drafts() {
   const rows=await request('/api/drafts?'+new URLSearchParams( {
     businessId:scope,archived:document.getElementById('show-archived-drafts').checked
   }
-  ));
+  ),{loading});
   if(scope!==selection.value||token!==sequence)return;
   loadedRows=rows;
   renderDrafts();
@@ -105,21 +105,23 @@ function renderDrafts(){
   const host=document.getElementById('draft-list');
   const scoped=loadedRows.filter(d=>filter.value==='ALL'||d.workflow===filter.value);
   document.getElementById('metric-total').textContent=scoped.length;
-  document.getElementById('metric-saved').textContent=scoped.filter(d=>d.status==='SAVED').length;
-  document.getElementById('metric-working').textContent=scoped.filter(d=>d.status==='DRAFT').length;
+  document.getElementById('metric-saved').textContent=scoped.filter(d=>Number(d.has_sheet)>0||d.status==='SAVED').length;
+  document.getElementById('metric-working').textContent=scoped.filter(d=>d.status==='DRAFT'&&!Number(d.has_sheet)).length;
   const rows=scoped.filter(d=>d.title.toLocaleLowerCase().includes(search.value.toLocaleLowerCase())).sort((a,b)=>sort.value==='name'?a.title.localeCompare(b.title,'ko'):String(b.updated_at).localeCompare(String(a.updated_at)));
   document.getElementById('draft-count').textContent=rows.length+'개 작업';
   host.replaceChildren();
   for(const d of rows) {
     const entry=el('div','','asset-item'),info=el('div','','grow');
+    if(d.workflow==='EXCEL')info.append(el('span',Number(d.has_sheet)>0?'데이터 저장됨':'표 저장 전','badge'));
     info.append(el('strong',d.title),el('small',`${workflows[d.workflow]?.[0]||d.workflow} · ${({DRAFT:'작업 중',SAVED:'정리 완료',ARCHIVED:'보관'})[d.status]||d.status} · ${whenText(d.updated_at)}`));
     const tools=el('div','','actions');
     if(can('draft.read')) {
-      const link=el('a','열기','button small');
-      link.href='/work/drafts/'+encodeURIComponent(d.id)+'?'+new URLSearchParams({return:location.pathname+location.search});
+      const hasData=d.workflow==='EXCEL'&&Number(d.has_sheet)>0;
+      const link=el('a',hasData?'원본 편집':'이어서 작업','button');
+      link.href='/work/drafts/'+encodeURIComponent(d.id)+'?'+new URLSearchParams({step:hasData?'edit':'start',return:location.pathname+location.search});
       tools.append(link);
-      if(d.workflow==='EXCEL'&&caps.has('workspace.sheet.analysis.read')){
-        const analysisLink=el('a','데이터 보기','button small quiet');analysisLink.href='/work/drafts/'+encodeURIComponent(d.id)+'?'+new URLSearchParams({step:'finish',return:location.pathname+location.search});tools.append(analysisLink);
+      if(hasData&&caps.has('workspace.sheet.read')){
+        const analysisLink=el('a','데이터 센터 열기','button primary');analysisLink.href='/work/drafts/'+encodeURIComponent(d.id)+'?'+new URLSearchParams({step:'finish',return:location.pathname+location.search});tools.prepend(analysisLink);
       }
     }
     const arch=d.status==='ARCHIVED';
@@ -162,13 +164,13 @@ function renderDrafts(){
   if(!rows.length){const empty=el('div','','empty-state');empty.append(el('strong',search.value?'검색 결과가 없습니다':'아직 저장한 작업이 없습니다'),el('p',search.value?'다른 이름으로 검색하거나 검색어를 지워 주세요.':'위에서 업무를 선택하면 시작 방법을 고를 수 있습니다.'));host.append(empty);}
 }
 async function assets(){const link=document.getElementById('my-files-link');link.href='/my/files?'+new URLSearchParams({businessId:selection.value});}
-async function refresh() {
-  await permissions();
-  await loadScopes();
+async function refresh(loading=true) {
+  await permissions(loading);
+  await loadScopes(loading);
   renderWorkflows();
   document.querySelectorAll('.sidebar [data-workflow]').forEach(a=>{const u=new URL(a.href);u.searchParams.set('businessId',selection.value);a.href=u.pathname+u.search;});
   document.getElementById('scope-archive').textContent=current()?.archived_at?'사업 복원':'사업 보관';
-  await Promise.all([drafts(),assets()]);
+  await Promise.all([drafts(loading),assets()]);
 }
 function connect() {
   stopEvents?.();
@@ -181,7 +183,7 @@ function connect() {
 }
 function schedule() {
   clearTimeout(refreshTimer);
-  refreshTimer=setTimeout(()=>refresh().catch(e=>message(status,e.message,true)),300);
+  refreshTimer=setTimeout(()=>refresh({label:'최신 업무 현황을 확인하고 있습니다…',blocking:false}).catch(e=>message(status,e.message,true)),300);
 }
 
 function saveNavigation(){const q=new URLSearchParams();q.set('businessId',selection.value);if(filter.value!=='ALL')q.set('workflow',filter.value);if(search.value)q.set('q',search.value);q.set('sort',sort.value);history.replaceState({},'',location.pathname+'?'+q);document.querySelectorAll('.sidebar [data-workflow]').forEach(a=>{if(a.dataset.workflow===filter.value)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});}

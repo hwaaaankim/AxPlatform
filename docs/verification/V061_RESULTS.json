@@ -1,0 +1,151 @@
+{
+  "version": "0.6.1",
+  "date": "2026-10-25",
+  "java_full": {
+    "passed": 90,
+    "failed": 0
+  },
+  "final_targeted": {
+    "passed": 20,
+    "failed": 0,
+    "note": "subset rerun after final file-write cleanup change"
+  },
+  "storage_integration": {
+    "passed": 100,
+    "database": "H2 in-memory",
+    "disks": "three independent temporary directories"
+  },
+  "javascript_syntax": 32,
+  "rendered_pages": 30,
+  "ui": {
+    "replacement": {
+      "suite": "v061-storage-ui",
+      "passed": 11,
+      "checks": [
+        "missing original shows placeholder without a network request",
+        "preview uses authenticated local endpoint",
+        "failed preview becomes readable placeholder",
+        "one file required with shared DB impact explained",
+        "custom selection lists name and individual removal",
+        "conflict preserves selection and dialog",
+        "multipart replacement includes version and CSRF",
+        "active AI blocks replacement with a selected file",
+        "missing source is listed but disabled for use",
+        "source picker refreshes after nested replacement",
+        "replaced file retains original ID for linking"
+      ]
+    },
+    "files": {
+      "mode": "files",
+      "passed": 10,
+      "checks": [
+        "file list includes scope and project",
+        "quota includes both files",
+        "select all is current page only",
+        "single deselect keeps other selected",
+        "trash preserves used bytes",
+        "purge explicitly confirms detaching references",
+        "purge reduces quota after server result",
+        "normal file view contains no physical root",
+        "partial upload retains failed file",
+        "upload sets classification and idempotency key"
+      ]
+    },
+    "admin_files": {
+      "mode": "admin-files",
+      "passed": 10,
+      "checks": [
+        "file list includes scope and project",
+        "quota includes both files",
+        "select all is current page only",
+        "single deselect keeps other selected",
+        "trash preserves used bytes",
+        "purge explicitly confirms detaching references",
+        "purge reduces quota after server result",
+        "admin sees physical path",
+        "legacy copy exposed for controlled cleanup",
+        "policy accepts byte quota and version"
+      ]
+    },
+    "source_picker": {
+      "suite": "source-chooser",
+      "passed": 8,
+      "checks": [
+        "server query includes business, workflow and task",
+        "next page requests server page two",
+        "selected rows survive page navigation",
+        "search resets page and sends query",
+        "apply includes selections from both pages",
+        "single spreadsheet mode filters at server",
+        "single selection replaces earlier page selection",
+        "failed apply preserves dialog and selection"
+      ]
+    },
+    "workbook": {
+      "passed": 14,
+      "checks": [
+        "legacy-compatible saved sheet loads",
+        "switching tabs preserves unsaved cells",
+        "duplicate has a distinct sheet ID and preserves values",
+        "reorder changes sheet order without moving values between IDs",
+        "save sends the complete workbook and correct optimistic version",
+        "deletion keeps other sheet contents",
+        "discard restores all saved tabs",
+        "import lists every sheet, blocking only unreadable ones",
+        "import appends a uniquely named sheet and preserves leading zeros",
+        "photo setup selects matching sheets and explains per-photo usage",
+        "one batch request binds each photo to its sheet",
+        "partial failure displays actionable reason and only ready sheet is applicable",
+        "selected ready sheet applies once with versions and idempotency key",
+        "analysis requests explicitly selected sheet"
+      ]
+    },
+    "layout": {
+      "mode": "pages",
+      "passed": 30,
+      "checks": [
+        "shared layout on admin_index.html",
+        "shared layout on admin_member-detail.html",
+        "shared layout on admin_members.html",
+        "shared layout on admin_operations.html",
+        "shared layout on admin_password.html",
+        "shared layout on admin_permissions.html",
+        "shared layout on admin_system.html",
+        "shared layout on auth_admin-login.html",
+        "shared layout on auth_login.html",
+        "shared layout on auth_recovery.html",
+        "shared layout on auth_reset.html",
+        "shared layout on auth_signup.html",
+        "shared layout on auth_social-existing.html",
+        "shared layout on auth_terms.html",
+        "shared layout on error_403.html",
+        "shared layout on error_404.html",
+        "shared layout on error_5xx.html",
+        "shared layout on error_failure.html",
+        "shared layout on workspace_dashboard.html",
+        "shared layout on workspace_dashboard_customer.html",
+        "shared layout on workspace_draft.html",
+        "shared layout on workspace_draft_APP.html",
+        "shared layout on workspace_draft_CALENDAR.html",
+        "shared layout on workspace_draft_CRM.html",
+        "shared layout on workspace_draft_HWP.html",
+        "shared layout on workspace_draft_PPT.html",
+        "shared layout on workspace_draft_WORD.html",
+        "shared layout on workspace_files.html",
+        "shared layout on workspace_files_admin.html",
+        "shared layout on workspace_index.html"
+      ]
+    }
+  },
+  "other_executed_ui": {
+    "draft": 14,
+    "ai_controls": 3
+  },
+  "not_executed": [
+    "actual Windows/Eclipse runtime",
+    "actual macOS runtime",
+    "actual production MariaDB",
+    "real browser visual/touch/IME checks",
+    "actual paid OpenAI API"
+  ]
+}

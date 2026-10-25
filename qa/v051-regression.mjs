@@ -72,7 +72,7 @@ if(mode==='ai'){
   const style=page.document.createElement('style');style.textContent=styles;page.document.head.append(style);
   check('shared layout on '+file,()=>{
    const links=[...page.document.querySelectorAll('link[rel=stylesheet]')];
-   assert.ok(links.at(-1)?.getAttribute('href').includes('/css/layout.css?v=0.6.0'));
+   assert.ok(links.at(-1)?.getAttribute('href').includes('/css/layout.css?v=0.9.1'));
    const main=page.document.querySelector('.app-frame+main');if(main)assert.equal(page.getComputedStyle(main).maxWidth,'none');
    for(const element of page.document.querySelectorAll('main.container .panel,main.container .notice,main.container .card'))assert.equal(page.getComputedStyle(element).width,'100%');
   });

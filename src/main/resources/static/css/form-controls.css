@@ -31,3 +31,4 @@ button:disabled{cursor:not-allowed}.button.danger{color:#a73d46}.button.danger:h
 .prepare-mode-tools .upload-zone{padding:0;border:0;background:transparent;margin:12px 0}
 .file-picker .button{flex-shrink:0}
 .date-control{isolation:isolate}.date-open{z-index:3}
+.file-state.stored{color:#24634c;background:#e9f6ef;border-color:#c8e6d5}

@@ -34,11 +34,11 @@ if(page==='draft'){
  await import(pathToFileURL(entry+'draft.js'));await waitFor(()=>document.getElementById('prepare-tools').children.length);
  check('first view contains only source choices',()=>assert.equal(document.querySelector('[data-stage-panel="edit"]').hidden,true));
  document.querySelector('[data-mode="direct"]').click();check('direct route opens preparation',()=>assert.equal(document.querySelector('[data-stage-panel="prepare"]').hidden,false));
- clickText('매출 기록');clickText('편집으로 이동 →');
+ clickText('매출 기록');clickText('정리 내용 확인 →');clickText('확인하고 편집 →');
  check('only table tab visible',()=>{assert.equal(document.getElementById('sheet-section').hidden,false);assert.equal(document.getElementById('ai-section').hidden,true);assert.equal(document.querySelector('[data-stage-panel="prepare"]').hidden,true);});
  clickText('행 추가');const cells=[...document.querySelectorAll('input[data-cell]')];check('manual row is editable',()=>assert.equal(cells.length,5));
  for(const [i,value]of ['2026-10-20','거래처 A','상품', '2','3000'].entries()){cells[i].value=value;cells[i].dispatchEvent(new Event('input'));}
- clickText('전체 행 선택');check('sheet row selection count and clear preserve data',()=>{assert.ok(document.querySelector('.sheet-toolbar').textContent.includes('선택 1 / 1행'));});clickText('행 선택 해제');check('row clear disables deletion',()=>assert.equal([...document.querySelectorAll('button')].find(b=>b.textContent==='선택한 행 삭제').disabled,true));
+ clickText('현재 페이지 선택');check('sheet row selection count and clear preserve data',()=>{assert.ok(document.querySelector('.sheet-toolbar').textContent.includes('선택 1 / 1행'));});clickText('행 선택 해제');check('row clear disables deletion',()=>assert.equal([...document.querySelectorAll('button')].find(b=>b.textContent==='선택한 행 삭제').disabled,true));
  document.querySelector('[data-editor-tab="ai"]').click();check('AI tab preserves manual cells',()=>assert.equal(cells[1].value,'거래처 A'));
  document.querySelector('[data-editor-tab="table"]').click();clickText('저장하고 데이터 보기 →');
  await waitFor(()=>document.querySelector('[data-stage-panel="finish"]').hidden===false);

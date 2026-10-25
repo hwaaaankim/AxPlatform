@@ -22,10 +22,27 @@ public class ManagedStorage {
     private final Path root, legacy;
     private final Clock clock;
     private final String volumeId;
+    private final boolean perDevice;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ManagedStorage.class);
 
     public ManagedStorage(Environment env, Clock clock) throws IOException {
         this.clock = clock;
-        root = prepare(env.getProperty("ax.storage.root", "./data/managed"));
+        String mode = env.getProperty("ax.storage.binding-mode", "strict");
+        if (!Set.of("strict", "per-device").contains(mode))
+            throw new IOException("ax.storage.binding-mode는 strict 또는 per-device여야 합니다.");
+        perDevice = "per-device".equals(mode);
+        String environment = env.getProperty("ax.storage.environment", "local");
+        if (!environment.matches("[a-zA-Z0-9_-]{1,40}")) throw new IOException("저장 환경 이름을 확인하세요.");
+        String configured = env.getProperty("ax.storage.root", "./data/managed");
+        boolean windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
+        Path automatic = automaticRoot(windows, Files.isDirectory(Path.of("D:/")),
+                System.getProperty("user.home"), environment);
+        if ("auto".equalsIgnoreCase(configured) || configured.isBlank()) configured = automatic.toString();
+        else if (perDevice && !windows && configured.matches("^[A-Za-z]:.*")) {
+            log.info("PC별 저장 모드: Windows 경로 대신 이 컴퓨터의 기본 자료 폴더를 사용합니다.");
+            configured = automatic.toString();
+        }
+        root = prepare(configured);
         Path marker = root.resolve("storage-volume.id");
         if (Files.isSymbolicLink(marker)) throw new IOException("저장소 식별 파일은 링크를 사용할 수 없습니다.");
         try {
@@ -42,22 +59,27 @@ public class ManagedStorage {
                     new String(in.readNBytes(100), java.nio.charset.StandardCharsets.UTF_8).trim();
             if (!volumeId.matches("[a-f0-9-]{36}")) throw new IOException("저장소 식별 파일이 올바르지 않습니다.");
         }
-        legacy =
-                Path.of(
-                                env.getProperty(
-                                        "ax.storage.legacy-root",
-                                        env.getProperty("ax.storage-root", "./data/private")))
-                        .toAbsolutePath()
-                        .normalize();
+        String legacyConfigured = env.getProperty("ax.storage.legacy-root",
+                env.getProperty("ax.storage-root", "./data/private"));
+        if (perDevice && !windows && legacyConfigured.matches("^[A-Za-z]:.*"))
+            legacyConfigured = root.resolve("legacy").toString();
+        legacy = Path.of(legacyConfigured).toAbsolutePath().normalize();
         if (Files.exists(legacy) && Files.isSymbolicLink(legacy))
             throw new IOException("기존 저장 루트에 심볼릭 링크를 사용할 수 없습니다.");
     }
+
+    static Path automaticRoot(boolean windows, boolean hasDDrive, String home, String environment) {
+        return windows && hasDDrive ? Path.of("D:/AxPlatform", environment)
+                : Path.of(home, "AxPlatform", environment);
+    }
+
+    public boolean perDevice() { return perDevice; }
 
     private static Path prepare(String configured) throws IOException {
         if (configured.matches("^[A-Za-z]:.*")
                 && !System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows"))
             throw new IOException(
-                    "Windows 저장 경로를 Linux에서 사용할 수 없습니다. AX_STORAGE_ROOT를 서버의 절대 경로로 지정하세요.");
+                    "Windows 저장 경로를 macOS/Linux에서 사용할 수 없습니다. AX_STORAGE_ROOT를 절대 경로로 지정하세요.");
         Path p = Path.of(configured).toAbsolutePath().normalize();
         secureDirectories(p);
         return p.toRealPath();
@@ -173,12 +195,18 @@ public class ManagedStorage {
     public Path write(String key, byte[] data) throws IOException {
         Path p = resolve("MANAGED", key);
         secureDirectories(p.getParent());
-        Files.write(
-                p,
-                data,
-                StandardOpenOption.CREATE_NEW,
-                StandardOpenOption.WRITE,
-                LinkOption.NOFOLLOW_LINKS);
+        // CREATE_NEW prevents collisions; remove only bytes created by this write on failure.
+        boolean created = false;
+        try {
+            try (var out = Files.newOutputStream(p, StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
+                created = true;
+                out.write(data);
+            }
+        } catch (IOException e) {
+            if (created) try { Files.deleteIfExists(p); } catch (IOException cleanup) { e.addSuppressed(cleanup); }
+            throw e;
+        }
         return p;
     }
 
@@ -205,6 +233,7 @@ public class ManagedStorage {
     }
 
     public Map<String, String> roots() {
-        return Map.of("managedRoot", root.toString(), "legacyRoot", legacy.toString());
+        return Map.of("managedRoot", root.toString(), "legacyRoot", legacy.toString(),
+                "bindingMode", perDevice ? "per-device" : "strict", "volumeId", volumeId);
     }
 }

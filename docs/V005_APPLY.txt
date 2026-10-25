@@ -1,3 +1,6 @@
+[0.6.1 추가 안내] DB 공유/PC별 파일 보관의 최신 동작은 V061_APPLY.txt를 우선하세요.
+아래의 저장소 일치·폴더 복사·재바인딩 안내는 기존 strict 모드에 해당합니다. per-device에서는 PC 이동 시 폴더 복사/12번 SQL이 필요 없습니다.
+
 AxPlatform 0.5.0 적용 안내
 기준: 0.4.2 적용 프로젝트 / V004까지 완료한 MariaDB / Java 17 / Eclipse / HeidiSQL
 

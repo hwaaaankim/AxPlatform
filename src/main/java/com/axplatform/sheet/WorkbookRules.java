@@ -8,6 +8,7 @@ import java.util.*;
 /** A project owns one versioned workbook. Legacy single-table JSON is read without migration. */
 public final class WorkbookRules {
     public static final int MAX_SHEETS = 20;
+    public static final long MAX_WORKBOOK_CELLS=2_000_000;
     public static final String LEGACY_ID = "sheet1";
     private WorkbookRules() {}
 
@@ -30,11 +31,12 @@ public final class WorkbookRules {
         if(!Set.of("format","sheets","activeSheetId").containsAll(raw.keySet())
                 || !"AX_WORKBOOK_1".equals(raw.get("format")) || !(raw.get("sheets") instanceof List<?> entries)
                 || entries.isEmpty() || entries.size()>MAX_SHEETS) throw Problem.invalid("프로젝트에는 1~20개의 시트를 저장할 수 있습니다.");
-        List<Map<String,Object>> sheets=new ArrayList<>();Set<String> ids=new HashSet<>(),names=new HashSet<>();
+        long totalCells=0;List<Map<String,Object>> sheets=new ArrayList<>();Set<String> ids=new HashSet<>(),names=new HashSet<>();
         for(Object entry:entries) {
             if(!(entry instanceof Map<?,?> s) || !Set.of("id","name","data","sourceAssetIds").containsAll(s.keySet())
                     || !(s.get("id") instanceof String id) || !id.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")
                     || !ids.add(id) || !(s.get("data") instanceof Map<?,?> data)) throw Problem.invalid("시트 ID·데이터가 없거나 중복되었습니다.");
+            if(data.get("rows") instanceof List<?> rows && data.get("columns") instanceof List<?> cols){totalCells+=(long)rows.size()*cols.size();if(totalCells>MAX_WORKBOOK_CELLS)throw Problem.invalid("프로젝트 전체 데이터는 200만 셀 이내로 나누세요.");}
             String title=name(s.get("name"));
             if(!names.add(title.toLowerCase(Locale.ROOT))) throw Problem.invalid("시트 이름 ‘"+title+"’이 중복됩니다. 다른 이름을 입력하세요.");
             Object source=s.containsKey("sourceAssetIds")?s.get("sourceAssetIds"):List.of();
@@ -46,7 +48,7 @@ public final class WorkbookRules {
         String active=Objects.toString(raw.get("activeSheetId"),"");
         if(!ids.contains(active)) throw Problem.invalid("선택한 시트가 없습니다. 시트를 다시 선택하세요.");
         var book=Map.<String,Object>of("format","AX_WORKBOOK_1","sheets",List.copyOf(sheets),"activeSheetId",active);
-        if(new JsonCodec().write(book).getBytes(StandardCharsets.UTF_8).length>8_000_000) throw Problem.invalid("프로젝트의 전체 시트 데이터는 UTF-8 기준 8MB 이하로 나누세요.");
+        if(new JsonCodec().write(book).getBytes(StandardCharsets.UTF_8).length>32_000_000) throw Problem.invalid("프로젝트의 전체 시트 데이터는 UTF-8 기준 32MB 이하로 나누세요.");
         return book;
     }
 
@@ -64,7 +66,7 @@ public final class WorkbookRules {
     }
     public static Map<String,Object> template(Map<String,Object> book) {
         var result=book;
-        for(var s:sheets(book)){var data=new LinkedHashMap<>(data(book,(String)s.get("id")));data.put("rows",List.of());data.put("rowIds",List.of());result=replace(result,(String)s.get("id"),data);}
+        for(var s:sheets(book)){var data=new LinkedHashMap<>(data(book,(String)s.get("id")));data.put("rows",List.of());data.put("rowIds",List.of());data.remove("presentation");data.remove("view");data.remove("excel");result=replace(result,(String)s.get("id"),data);}
         List<Map<String,Object>> cleared=new ArrayList<>();for(var s:sheets(result)){var n=new LinkedHashMap<>(s);n.put("sourceAssetIds",List.of());cleared.add(n);}
         return Map.of("format","AX_WORKBOOK_1","activeSheetId",result.get("activeSheetId"),"sheets",cleared);
     }

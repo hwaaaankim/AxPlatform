@@ -1,29 +1,22 @@
-import {el,button,message} from './ui.js?v=0.6.0';
-import {makePreviewTable} from './sheet-editor.js?v=0.6.0';
+import {withLoading} from './loading.js?v=0.9.1';
+import {formulaReview} from './formula-review.js?v=0.9.1';
+import {request} from './request.js?v=0.9.1';
+import {el,button,message} from './ui.js?v=0.9.1';
+import {makePreviewTable} from './sheet-editor.js?v=0.9.1';
+import {letter} from './table-view.js?v=0.9.1';
+export function importTable(source){
+ const columns=source.headers.map((h,i)=>{const values=source.rows.map((r,ri)=>source.excel?.formulas?.[letter(i)+(ri+2)]&&/^#/.test(r[i])?'':r[i]).filter(v=>v!==''),numeric=values.length&&values.every(v=>/^-?(?:0|[1-9]\d*)(?:\.\d{1,12})?$/.test(v)&&v.replace(/[^0-9]/g,'').replace(/^0+/,'').length<=15),date=values.length&&values.every(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&v>='1900-01-01'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v);return {id:'c_'+crypto.randomUUID().replaceAll('-','').slice(0,18),label:(h.trim()||letter(i)).slice(0,100),sourceHeader:h,type:numeric?'NUMBER':date?'DATE':'TEXT',unit:'',width:source.presentation?.widths?.[i]||160};});
+ return {columns,rows:source.rows,rowIds:source.rows.map(()=>crypto.randomUUID()),...(source.presentation?{presentation:source.presentation}:{}),...(source.excel?{excel:source.excel}:{})};
+}
 export function renderWorkbookImport(host,report,context){
- host.replaceChildren();const heading=el('h3','가져올 시트 확인'),info=el('p','','help-line'),list=el('div','','import-sheet-list'),agree=el('input'),label=el('label','','check'),actions=el('div','','actions');agree.type='checkbox';label.append(agree,el('span','시트별 제외 항목·수식의 계산값 변환·숨김 여부를 확인했습니다. 선택한 시트만 편집 초안에 넣습니다.'));
- const snapshot=JSON.stringify(context.editor.workbook()),choices=[];
- const selectAll=button('읽을 수 있는 표시 시트 전체 선택',()=>{choices.forEach(({cb,source})=>{if(!cb.disabled)cb.checked=source.visibility==='visible';});summary();});
- const clear=button('선택 해제',()=>{choices.forEach(({cb})=>cb.checked=false);summary();});
- report.sheets.forEach(source=>{
-  const item=el('section','','subpanel import-sheet'),row=el('div','','panel-heading'),cb=el('input'),name=el('label','','check'),meta=el('span',source.status==='BLOCKED'?'가져오기 불가':source.status==='EMPTY'?'빈 시트':`${source.headers.length}열 · ${source.rows.length}행`,'badge');cb.type='checkbox';cb.disabled=source.status==='BLOCKED';cb.checked=!cb.disabled&&source.visibility==='visible';name.append(cb,el('strong',source.sheetName));row.append(name,meta);item.append(row);cb.addEventListener('change',summary);choices.push({cb,source});
-  for(const issue of source.issues||[]){const notice=el('div','',issue.severity==='ERROR'?'notice error':'notice warning');notice.append(el('strong',issue.message),el('p',issue.remedy));item.append(notice);}
-  if(source.status!=='BLOCKED'){
-   const detail=el('details'),title=el('summary','셀 값 미리보기 · 가져오기 안내');detail.append(title);
-   (source.warnings||[]).forEach(t=>detail.append(el('p',t,'muted')));
-   if(source.headers.length)detail.append(makePreviewTable({columns:source.headers.map((h,i)=>({label:h||'열 '+(i+1)})),rows:source.rows}));
-   else detail.append(el('p','빈 시트로 추가한 뒤 열을 직접 만들 수 있습니다.','muted'));
-   if(source.headers.length&&context.mapCurrent)detail.append(button('이 시트만 현재 시트의 열에 연결',()=>context.mapCurrent(source),'button'));
-   item.append(detail);
-  }
-  list.append(item);
- });
- const apply=button('선택한 시트를 프로젝트에 추가',()=>{
-  try{if(!agree.checked)throw Error('시트별 안내를 확인한 뒤 확인란을 선택하세요.');const selected=choices.filter(x=>x.cb.checked&&!x.cb.disabled);if(!selected.length)throw Error('가져올 시트를 선택하세요.');if(JSON.stringify(context.editor.workbook())!==snapshot)throw Error('미리보기 후 표가 바뀌었습니다. 입력은 유지했습니다. 파일을 다시 읽어 적용 범위를 확인하세요.');
-   const sheets=selected.map(({source:s})=>({name:s.sheetName,data:{columns:s.headers.map((h,i)=>({id:'c_'+crypto.randomUUID().replaceAll('-','').slice(0,18),label:h.trim()||'열 '+(i+1),type:'TEXT',unit:'',width:160})),rows:s.rows,rowIds:s.rows.map(()=>crypto.randomUUID())},sourceAssetIds:[context.assetId]}));
-   context.editor.addSheets(sheets);apply.disabled=true;context.done(selected.length);
-  }catch(error){message(info,error.message,true);}
- },'button primary');
- function summary(){const count=choices.filter(x=>x.cb.checked&&!x.cb.disabled).length;message(info,`원본 ${report.sheets.length}시트 · 선택 ${count}시트 · 가져오기 불가 ${choices.filter(x=>x.cb.disabled).length}시트`);apply.disabled=count===0;}
- actions.append(selectAll,clear);host.append(heading,el('p','정상 시트는 한 번에 가져옵니다. 같은 이름은 번호를 붙이고, 기존 시트의 데이터는 유지합니다. 숫자·날짜는 우선 문자로 읽으므로 편집에서 열 형식을 확인하세요.','muted'),actions,info,list,label,apply);summary();
+ host.replaceChildren();const tabs=el('div','','workbook-tabs'),summary=el('p','','help-line'),content=el('div'),actions=el('div','','actions'),choices=[];let applied=false,preview=null,shown=null,processing=false;const dataBySource=new Map(report.sheets.map(s=>[s,importTable(s)]));const previewBook=()=>({format:'AX_WORKBOOK_1',activeSheetId:'preview0',sheets:report.sheets.filter(s=>s.status!=='BLOCKED').map((s,i)=>({id:'preview'+i,name:s.sheetName,data:dataBySource.get(s),sourceAssetIds:[]}))});const snapshot=JSON.stringify(context.editor.workbook());
+ for(const source of report.sheets){const row=el('label','','import-tab'),cb=el('input'),tab=button(source.sheetName,()=>withLoading('미리보기 시트를 바꾸고 있습니다…',()=>show(source)).catch(e=>message(summary,e.message,true)),'button small');cb.type='checkbox';cb.disabled=source.status==='BLOCKED';cb.checked=!cb.disabled&&source.visibility==='visible';cb.setAttribute('aria-label',source.sheetName+' 가져오기');cb.addEventListener('change',update);row.append(cb,tab);tabs.append(row);choices.push({source,cb,tab});}
+ function show(source){shown=source;content.replaceChildren();choices.forEach(x=>x.tab.setAttribute('aria-pressed',String(x.source===source)));const count=el('div','','import-summary');count.append(el('strong',source.sheetName),el('span',`${source.headers.length}열 · ${source.rows.length.toLocaleString()}행`,'badge'));if(source.visibility!=='visible')count.append(el('span','원본에서 숨긴 시트','badge'));content.append(count);
+  if(source.issues?.length){const detail=el('details','','import-issues');detail.append(el('summary',source.status==='BLOCKED'?'이 시트를 가져올 수 없는 이유':`수식·서식 확인 ${source.issues.length}건`));for(const issue of source.issues)detail.append(el('p',issue.message+' '+issue.remedy));detail.open=source.status==='BLOCKED';content.append(detail);}
+  if(source.status!=='BLOCKED'){preview=makePreviewTable(dataBySource.get(source));content.append(preview);}
+ }
+ function apply(){if(applied)return true;if(processing){message(summary,'수식 처리가 끝난 뒤 계속하세요.',true);return false;}try{const selected=choices.filter(x=>x.cb.checked&&!x.cb.disabled);if(!selected.length)throw Error('가져올 시트를 선택하세요.');if(selected.length<choices.filter(x=>!x.cb.disabled).length&&selected.some(x=>Object.values(dataBySource.get(x.source).excel?.formulas||{}).some(f=>f.replace(/"(?:[^"]|"")*"/g,'').includes('!'))))throw Error('선택한 시트에 다른 시트를 참조하는 수식이 있습니다. 계산 연결을 유지하려면 원본 시트를 함께 선택하세요.');if(JSON.stringify(context.editor.workbook())!==snapshot)throw Error('미리보기 후 편집 내용이 바뀌었습니다. 파일을 다시 읽어 주세요.');const sheets=selected.map(({source:s})=>({name:s.sheetName,data:dataBySource.get(s),sourceAssetIds:[context.assetId]}));context.editor.addSheets(sheets);applied=true;importButton.disabled=true;context.done(selected.length);return true;}catch(e){message(summary,e.message,true);return false;}}
+ const applyWithLoading=()=>withLoading('선택한 시트를 편집 화면에 준비하고 있습니다…',apply);const importButton=button('선택 시트로 계속 →',applyWithLoading,'button primary');
+ function update(){const n=choices.filter(x=>x.cb.checked&&!x.cb.disabled).length;summary.textContent=`${report.sheets.length}개 시트 중 ${n}개 선택${context.editor.hasColumns?.()?' · 현재 시트를 유지하고 선택한 시트를 추가합니다.':''}`;importButton.disabled=!n||applied;importButton.textContent=`${n}개 시트로 계속 →`;context.selectionChanged?.(n);}
+ actions.append(importButton);host.append(tabs,summary);const review=formulaReview(host,{book:previewBook,jump(id,address){const source=report.sheets.filter(s=>s.status!=='BLOCKED')[Number(id.replace('preview',''))];show(source);preview?.goTo(address);},canEdit:()=>!applied&&!processing,async process(action){processing=true;importButton.disabled=true;try{const business=document.getElementById('business-id')?.value||context.businessId||context.business?.();if(!business)throw Error('작업 사업 정보를 확인하세요.');const book=await request('/api/sheets/workbook-calculation?businessId='+encodeURIComponent(business)+'&action='+action,{method:'POST',body:previewBook()});book.sheets.forEach((s,i)=>dataBySource.set(report.sheets.filter(s=>s.status!=='BLOCKED')[i],s.data));show(shown);message(summary,'원본 수식을 보관하고 임시 처리했습니다. 편집에서 값·수식을 다시 입력할 수 있습니다.');}finally{processing=false;update();}}});host.append(content,actions);show(report.sheets.find(s=>s.status==='READY')||report.sheets[0]);update();return {apply:applyWithLoading,canApply:()=>choices.some(x=>x.cb.checked&&!x.cb.disabled)&&!applied};
 }

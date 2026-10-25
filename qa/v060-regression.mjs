@@ -24,7 +24,7 @@ globalThis.fetch=async(url,options={})=>{const body=options.body?JSON.parse(opti
  if(url==='/api/drafts/test/ai-runs')return response(run?[run]:[]);
  if(url==='/api/ai-runs/batch-run/apply-sheets'){run={...run,status:'APPLIED'};return response(run);}
  if(url==='/api/drafts/test/sheet/views')return response([]);
- if(url==='/api/drafts/test/sheet/analysis')return response({sheetVersion:saved.version,rowCount:1,blankValues:0,unit:'건',points:[],config:body});
+ if(url==='/api/drafts/test/sheet/data'){const t=saved.workbook.sheets.find(s=>s.id===body.config.sheetId).data;return response({sheetVersion:saved.version,draftVersion:saved.draftVersion,config:body.config,columns:t.columns,rows:t.rows,sourceRows:t.rows.map((_,i)=>i+2),sourceCount:t.rows.length,matchedCount:t.rows.length,totalRows:t.rows.length,page:0,charts:['TABLE'],chartRows:[],profile:[]});}
  throw Error('Unexpected fixture request '+url);
 };w.fetch=fetch;
 const caps=new Set(['read','update','schema.update','rows.create','rows.delete','cells.update','formula.update','analysis.read','analysis.manage'].map(a=>'workspace.sheet.'+a));['read','run','apply'].forEach(a=>caps.add('workspace.ai.'+a));caps.add('workspace.asset.list');caps.add('workspace.asset.download');
@@ -33,23 +33,23 @@ const {createSheetEditor}=await import(pathToFileURL(base+'sheet-editor.js'));co
 check('legacy-compatible saved sheet loads',()=>assert.equal(editor.snapshot().rows[0][0],'001'));
 editor.replaceWorking(data('CHANGED'));const added=editor.addSheets([{name:'재고',data:data('002')}],{replaceEmpty:false});editor.selectSheet('sheet1');
 check('switching tabs preserves unsaved cells',()=>assert.equal(editor.snapshot().rows[0][0],'CHANGED'));
-editor.selectSheet(added[0]);button(host,'시트 복제').click();
+editor.selectSheet(added[0]);button(host,'시트 복제').click();await wait(()=>editor.workbook().sheets.length===3);
 check('duplicate has a distinct sheet ID and preserves values',()=>{assert.equal(editor.workbook().sheets.length,3);assert.equal(editor.snapshot().rows[0][0],'002');assert.equal(new Set(editor.workbook().sheets.map(s=>s.id)).size,3);});
-button(host,'← 이동').click();const ids=editor.workbook().sheets.map(s=>s.id);check('reorder changes sheet order without moving values between IDs',()=>{assert.equal(ids[1],editor.activeSheetId());assert.equal(editor.workbook().sheets[0].data.rows[0][0],'CHANGED');});
+button(host,'← 이동').click();await wait(()=>editor.workbook().sheets[1].id===editor.activeSheetId());const ids=editor.workbook().sheets.map(s=>s.id);check('reorder changes sheet order without moving values between IDs',()=>{assert.equal(ids[1],editor.activeSheetId());assert.equal(editor.workbook().sheets[0].data.rows[0][0],'CHANGED');});
 await editor.save();check('save sends the complete workbook and correct optimistic version',()=>{const c=calls.find(c=>c.url.endsWith('/workbook'));assert.equal(c.body.workbook.sheets.length,3);assert.equal(c.body.version,0);});
-button(host,'시트 삭제').click();check('deletion keeps other sheet contents',()=>{assert.equal(editor.workbook().sheets.length,2);assert.equal(editor.workbook().sheets[0].data.rows[0][0],'CHANGED');});
+button(host,'시트 삭제').click();await wait(()=>editor.workbook().sheets.length===2);check('deletion keeps other sheet contents',()=>{assert.equal(editor.workbook().sheets.length,2);assert.equal(editor.workbook().sheets[0].data.rows[0][0],'CHANGED');});
 button(host,'전체 시트 변경 취소').click();check('discard restores all saved tabs',()=>assert.equal(editor.workbook().sheets.length,3));
 // Import report excludes failed and hidden sheets by default, with no destructive replacement.
 const {renderWorkbookImport}=await import(pathToFileURL(base+'workbook-import.js'));const importHost=document.createElement('div');document.body.append(importHost);
 const source=(name,status='READY',visibility='visible')=>({sheetName:name,status,visibility,headers:['코드'],rows:[['0008']],warnings:[],issues:status==='BLOCKED'?[{code:'FORMULA_NO_CACHE',severity:'ERROR',message:'A2 계산값 없음',remedy:'Excel에서 계산 후 저장'}]:[]});
 renderWorkbookImport(importHost,{sheets:[source('매출'),source('오류','BLOCKED'),source('숨김','READY','hidden')]},{editor,assetId:assets[0].id,done:()=>{}});
-check('import lists every sheet, blocking only unreadable ones',()=>{assert.equal(importHost.querySelectorAll('.import-sheet').length,3);assert.equal(importHost.querySelectorAll('.import-sheet input:checked').length,1);assert.equal(importHost.querySelectorAll('.import-sheet input:disabled').length,1);assert.ok(importHost.textContent.includes('A2 계산값 없음'));});
-[...importHost.children].find(n=>n.tagName==='LABEL').querySelector('input').checked=true;button(importHost,'선택한 시트를 프로젝트에 추가').click();check('import appends a uniquely named sheet and preserves leading zeros',()=>{assert.equal(editor.workbook().sheets.length,4);assert.equal(editor.snapshot().rows[0][0],'0008');assert.equal(editor.workbook().sheets.at(-1).name,'매출 (2)');});
+button(importHost,'오류').click();await wait(()=>importHost.textContent.includes('A2 계산값 없음'));check('import lists every sheet, blocking only unreadable ones',()=>{assert.equal(importHost.querySelectorAll('.import-tab').length,3);assert.equal(importHost.querySelectorAll('.import-tab input:checked').length,1);assert.equal(importHost.querySelectorAll('.import-tab input:disabled').length,1);assert.ok(importHost.textContent.includes('A2 계산값 없음'));});
+button(importHost,'1개 시트로 계속 →').click();await wait(()=>editor.workbook().sheets.length===4);check('import appends a uniquely named sheet and preserves leading zeros',()=>{assert.equal(editor.workbook().sheets.length,4);assert.equal(editor.snapshot().rows[0][0],'0008');assert.equal(editor.workbook().sheets.at(-1).name,'매출 (2)');});
 await editor.save();
 const photoIds=editor.addSheets(assets.map((a,i)=>({name:'사진'+(i+1),sourceAssetIds:[a.id]})));await editor.save();
 const {createAiPanel}=await import(pathToFileURL(base+'guided-ai.js'));const aiHost=document.createElement('section');document.body.append(aiHost);
 const ai=createAiPanel(aiHost,{...context,sheet:()=>editor,prepareAi:async()=>({draftVersion:saved.draftVersion,sheetVersion:saved.version}),hasLocalChanges:()=>editor.dirty(),versions:()=>({draftVersion:saved.draftVersion,sheetVersion:saved.version})});await ai.init();await ai.preparePhotoSheets(photoIds);
-check('photo setup selects matching sheets and explains per-photo usage',()=>{assert.equal(aiHost.querySelectorAll('.ai-photo-targets input:checked').length,2);assert.ok(aiHost.textContent.includes('별도 AI 호출'));});
+check('photo setup selects matching sheets and explains per-photo usage',()=>{assert.equal(aiHost.querySelectorAll('.ai-photo-targets input:checked').length,2);assert.equal(aiHost.querySelector('[aria-label="AI 행 수"]').disabled,true);assert.ok(aiHost.textContent.includes('별도 AI 호출'));});
 aiHost.querySelector('.ai-request-form > .check input').checked=true;aiHost.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await wait(()=>aiHost.querySelector('.ai-photo-result'));
 check('one batch request binds each photo to its sheet',()=>{const c=calls.find(c=>c.url.endsWith('/ai-runs')&&c.options.method==='POST');assert.deepEqual(c.body.photoSheetIds,photoIds);assert.deepEqual(c.body.assetIds,assets.map(a=>a.id));assert.equal(c.body.previousRunId,null);});
 check('partial failure displays actionable reason and only ready sheet is applicable',()=>{assert.equal(aiHost.querySelectorAll('.ai-photo-result').length,2);assert.equal(aiHost.querySelectorAll('[data-batch-sheet]').length,1);assert.ok(aiHost.textContent.includes('전체 표를 다시 촬영'));});
@@ -57,5 +57,5 @@ aiHost.querySelector('.ai-result > .check input').checked=true;button(aiHost,'�
 check('selected ready sheet applies once with versions and idempotency key',()=>{const c=calls.find(c=>c.url.endsWith('/apply-sheets'));assert.deepEqual(c.body.sheetIds,[photoIds[0]]);assert.equal(c.body.sheetVersion,saved.version);assert.ok(c.body.requestKey);});
 await wait(()=>run.status==='APPLIED');ai.destroy();
 const {createAnalysis}=await import(pathToFileURL(base+'sheet-analysis.js'));const analysisHost=document.createElement('section');document.body.append(analysisHost);const analysis=createAnalysis(analysisHost,{...context,dirty:()=>false,activeSheetId:()=>added[0]});await analysis.load();
-check('analysis requests explicitly selected sheet',()=>{assert.equal(analysisHost.querySelector('#analysis-sheet').value,added[0]);const c=calls.filter(c=>c.url.endsWith('/sheet/analysis')).at(-1);assert.equal(c.body.sheetId,added[0]);});
+check('analysis requests explicitly selected sheet',()=>{assert.equal(analysisHost.querySelector('[aria-label="현재 데이터 시트"]').value,added[0]);const c=calls.filter(c=>c.url.endsWith('/sheet/data')).at(-1);assert.equal(c.body.config.sheetId,added[0]);});
 console.log(JSON.stringify({passed:checks.length,checks},null,2));await w.happyDOM.abort();w.close();process.exit(0);

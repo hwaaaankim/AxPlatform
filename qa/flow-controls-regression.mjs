@@ -1,4 +1,5 @@
 import {Window} from 'happy-dom';import fs from 'node:fs';import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+if(process.argv[2]==='files-EXCEL'){await import('./v070-flow-regression.mjs');process.exit(0);}
 const scenario=process.argv[2]||'dashboard',workflow=scenario.startsWith('files-')?scenario.slice(6):'EXCEL',base=process.cwd(),fixtures=base+'/target/ui-rendered/',files=fs.readdirSync(fixtures);
 const fixture=scenario==='dashboard'?'_dashboard.html':scenario==='member'?files.find(n=>/^_admin_members_\d+\.html$/.test(n)):scenario==='permissions'?'_admin_permissions.html':scenario==='recovery'?'_recovery.html':files.find(n=>n.includes('work_new')&&n.includes(workflow));
 const w=new Window({url:'http://localhost'+(scenario==='dashboard'?'/dashboard':scenario==='member'?'/admin/members/1':scenario==='permissions'?'/admin/permissions':'/work/new?businessId=1&workflow='+workflow),settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true,disableJavaScriptEvaluation:true}});w.document.write(fs.readFileSync(fixtures+fixture,'utf8'));
@@ -23,7 +24,7 @@ globalThis.fetch=async(url,options={})=>{url=String(url);const method=options.me
 const tick=()=>new Promise(r=>setTimeout(r,8)),wait=async fn=>{for(let i=0;i<100;i++){if(fn())return;await tick();}throw new Error('QA timeout '+fn);},checks=[];const check=(name,fn)=>{fn();checks.push(name);};
 const button=(text,root=document)=>{const b=[...root.querySelectorAll('button')].find(b=>b.textContent===text);assert.ok(b,'Missing '+text);assert.equal(b.disabled,false,'Disabled '+text);b.click();return b;};
 function choose(input,names){const dt=new DataTransfer();for(const name of names)dt.items.add(new File(['hello'],name,{type:'text/plain',lastModified:1}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));}
-const module=name=>import(pathToFileURL(base+'/src/main/resources/static/js/'+name+'.js')+'?v=0.6.0');
+const module=name=>import(pathToFileURL(base+'/src/main/resources/static/js/'+name+'.js')+'?v=0.7.0');
 if(scenario==='ai'){
  assets=Array.from({length:4},(_,i)=>({id:'asset'+i,original_name:'자료'+i+'.txt',byte_size:1024,media_type:'text/plain'}));
  const {createAiPanel}=await module('guided-ai'),host=document.createElement('section');document.body.replaceChildren(host);const linked=[];

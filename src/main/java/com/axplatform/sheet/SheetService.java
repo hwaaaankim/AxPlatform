@@ -87,14 +87,20 @@ public class SheetService {
             // Do not trust an editable catalog dependency as the sole protection of actual mutations.
             for (String action : required)
                 access.business(subject, Inputs.number(d, "business_scope_id"), false, List.of(action), () -> null);
+            after=WorkbookCalculation.calculate(after);
             LocalDateTime now = LocalDateTime.now(clock);
             String saved = json.write(after), previous = undo ? null : json.write(before);
+            if(saved.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>14_000_000 && db.queryForObject("SELECT COUNT(*) FROM ap_schema_migration WHERE version='V006'",Integer.class)==0)throw Problem.invalid("수식 포함 데이터 저장 용량 확장이 필요합니다. 13번 SQL(V006)을 적용한 뒤 다시 저장하세요. 현재 편집 내용은 유지됩니다.");
+            if(saved.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>14_000_000){
+                boolean maria=Boolean.TRUE.equals(db.execute((org.springframework.jdbc.core.ConnectionCallback<Boolean>)connection->{String product=connection.getMetaData().getDatabaseProductName();return product.contains("MariaDB")||product.contains("MySQL");}));
+                if(maria&&db.queryForObject("SELECT @@session.max_allowed_packet",Long.class)<saved.getBytes(java.nio.charset.StandardCharsets.UTF_8).length+1024L)throw Problem.invalid("DB 패킷 한도가 표 크기보다 작습니다. 13번 SQL 안내대로 max_allowed_packet을 64MB 이상으로 변경하고 앱을 재시작하세요. 편집 내용은 현재 화면에 유지됩니다.");
+            }
             if (old == null) {
                 db.update("INSERT INTO ap_sheet(draft_id,workspace_id,business_scope_id,content_json,previous_json,version,created_at,updated_at) VALUES(?,?,?,?,?,0,?,?)",
                     id, d.get("workspace_id"), d.get("business_scope_id"), saved, previous, now, now);
             } else {
-                int changed = db.update("UPDATE ap_sheet SET content_json=?,previous_json=?,version=version+1,updated_at=? WHERE draft_id=? AND version=?",
-                    saved, previous, now, id, expectedVersion);
+                int changed = db.update("UPDATE ap_sheet SET previous_json="+(undo?"NULL":"content_json")+",content_json=?,version=version+1,updated_at=? WHERE draft_id=? AND version=?",
+                    saved, now, id, expectedVersion);
                 if (changed != 1) throw Problem.conflict("표가 먼저 변경되었습니다.");
             }
             if (bumpDraft) {
@@ -110,7 +116,12 @@ public class SheetService {
         return save(subject,id,WorkbookRules.normalize(book),version,draftVersion,true,false,false,null);
     }
     public Map<String,Object> applyAi(SessionSubject subject,String id,Map<String,Object> input,long version,long draftVersion,String sheetId) {
-        return save(subject,id,SheetRules.normalize(input),version,draftVersion,false,false,true,sheetId);
+        return applyAi(subject,id,input,version,draftVersion,sheetId,Map.of());
+    }
+    @SuppressWarnings("unchecked")
+    public Map<String,Object> applyAi(SessionSubject subject,String id,Map<String,Object> input,long version,long draftVersion,String sheetId,Map<String,Object> scope) {
+        var current=(Map<String,Object>)getSheet(subject,id,sheetId).get("sheet");
+        return save(subject,id,AiSheetScope.merge(current,SheetRules.normalize(input),scope),version,draftVersion,false,false,true,sheetId);
     }
     public Map<String,Object> applyAiWorkbook(SessionSubject subject,String id,Map<String,Object> book,long version,long draftVersion) {
         return save(subject,id,WorkbookRules.normalize(book),version,draftVersion,false,false,true,null);

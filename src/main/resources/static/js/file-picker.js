@@ -1,4 +1,4 @@
-import {el,button,message} from './ui.js?v=0.6.0';
+import {el,button,message} from './ui.js?v=0.9.1';
 
 const instances=new WeakMap();
 export const FILE_BYTES=10*1024*1024;
@@ -34,7 +34,7 @@ export function enhanceFileInput(input,options={}){
       const row=el('li','','file-selection-row'),info=el('div','','file-selection-info');
       const name=el('strong',entry.file.name);name.title=entry.file.name;
       info.append(name,el('small',fileSize(entry.file.size)));
-      const state=el('span',entry.state==='sending'?'업로드 중':entry.state==='error'?'실패 · 다시 시도 가능':'등록 대기','file-state '+entry.state);
+      const state=el('span',entry.state==='sending'?'업로드 중':entry.state==='stored'?'원본 등록 완료':entry.state==='error'?'실패 · 다시 시도 가능':'등록 대기','file-state '+entry.state);
       if(entry.error)info.append(el('span',entry.error,'file-error'));
       const remove=button('×',()=>api.remove(entry.file),'file-remove');
       remove.setAttribute('aria-label',entry.file.name+' 선택 해제');remove.title='이 파일만 선택 해제';remove.disabled=blocked();
@@ -64,6 +64,7 @@ export function enhanceFileInput(input,options={}){
     add,remove(file){if(blocked())return;entries=entries.filter(e=>e.file!==file);render();changed();message(status,'선택 목록에서 제거했습니다. 저장된 파일은 변경하지 않았습니다.');},
     clear(){if(blocked())return false;entries=[];input.value='';render();changed();message(status,'선택 목록을 비웠습니다.');return true;},
     setDisabled(value){disabled=!!value;render();},
+    setFileState(file,state,note){const entry=entries.find(e=>e.file===file);if(!entry||!["waiting","sending","stored","error"].includes(state))return;entry.state=state;entry.error=state==="error"?note:"";render();message(status,note||"",state==="error");},
     async upload(send){
       if(blocked())throw new Error('파일 처리 중이거나 업로드 권한이 없습니다.');
       if(!entries.length)throw new Error('등록할 파일을 먼저 선택하세요.');

@@ -1,6 +1,7 @@
-import {request} from './request.js?v=0.6.0';
-import {el,button,message} from './ui.js?v=0.6.0';
-import {fileSize} from './file-picker.js?v=0.6.0';
+import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
+import {request} from './request.js?v=0.9.1';
+import {el,button,message} from './ui.js?v=0.9.1';
+import {fileSize} from './file-picker.js?v=0.9.1';
 
 // Saved assets use the existing, reversible archive API. Selection removal in
 // an upload picker is intentionally a separate operation.
@@ -37,7 +38,9 @@ export function createAssetLibrary(host,context){
       cb.addEventListener('change',()=>{cb.checked?selected.add(String(a.id)):selected.delete(String(a.id));render();});
       const name=el('strong',a.original_name);name.title=a.original_name;
       info.append(name,el('small',fileSize(Number(a.byte_size))+' · '+(a.archived_at?'삭제됨 · 복원 가능':'등록 완료')));
-      if(!a.archived_at&&can('download')){const link=el('a','다운로드','button small');link.href='/api/assets/'+encodeURIComponent(a.id)+'/download';actions.append(link);}
+      info.append(el('small',localLabel(a),locallyMissing(a)?'missing-file-badge':'muted'));
+      if(!a.archived_at&&can('upload')&&can('archive')){const replace=button('파일 교체',()=>replaceAsset(a,{onReplaced:load}),'button small');replace.disabled=blocked();actions.append(replace);}
+      if(!a.archived_at&&!locallyMissing(a)&&can('download')){const link=el('a','다운로드','button small');link.href='/api/assets/'+encodeURIComponent(a.id)+'/download';actions.append(link);}
       if(can(a.archived_at?'restore':'archive')){const b=button(a.archived_at?'복원':'×',()=>mutate([a],!a.archived_at),a.archived_at?'button small':'file-remove');b.setAttribute('aria-label',a.original_name+(a.archived_at?' 복원':' 삭제'));b.title=a.archived_at?'복원':'파일 삭제 · 복원 가능';b.disabled=blocked();actions.append(b);}
       row.append(cb,info,actions);list.append(row);
     }

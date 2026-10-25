@@ -1,17 +1,18 @@
-import {fileSize} from './file-picker.js?v=0.6.0';
-import {diagnosticDetails} from './ai-diagnostic.js?v=0.6.0';
+import {locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
+import {fileSize} from './file-picker.js?v=0.9.1';
+import {diagnosticDetails} from './ai-diagnostic.js?v=0.9.1';
 import {
   request
-} from './request.js?v=0.6.0';
+} from './request.js?v=0.9.1';
 import {
   el,button,message,whenText
-} from './ui.js?v=0.6.0';
+} from './ui.js?v=0.9.1';
 import {
   makePreviewTable
-} from './sheet-editor.js?v=0.6.0';
+} from './sheet-editor.js?v=0.9.1';
 import {
   fields
-} from './workflow-guide.js?v=0.6.0';
+} from './workflow-guide.js?v=0.9.1';
 const copy=value=>JSON.parse(JSON.stringify(value));
 const activeStatuses=new Set(['QUEUED','RUNNING']);
 const labels={
@@ -19,7 +20,7 @@ const labels={
 };
 export function createAiPanel(host,context) {
   let settings=null,selectedRun=null,proposal=null,pollTimer=null,pollAbort=null,disposed=false,pending=false,lastRendered='',requestDraft=null,applyDraft=null,assets=[],answers=new Map();
-  const connection=el('p','','notice'),intro=el('p','업무를 짧게 설명하면 서버가 현재 업무·선택 자료를 읽어 변경안을 제안합니다. 제안은 직접 확인하고 고른 항목만 적용하며, 준비가 덜 되면 필요한 질문부터 표시합니다.','muted'),form=el('form','','ai-request-form'),promptLabel=el('label','다음에 무엇을 도와드릴까요?'),prompt=el('textarea'),examples=el('div','','guide-choices'),sources=el('fieldset','','ai-source-list'),sourceLegend=el('legend','이번 AI 검토에 보낼 원본 자료'),sourceList=el('div'),sendConfirm=el('label','','check'),consent=el('input'),start=el('button','현재 입력 저장 후 AI 검토 요청','button primary'),runStatus=el('p','','help-line'),runMeta=el('p','','muted'),cancel=button('진행 중 작업 취소',()=>cancelRun().catch(fail),'button danger'),historyBox=el('details'),historyTitle=el('summary','이전 제안·작업 이어 보기'),historyList=el('div'),result=el('div','','ai-result');
+  const connection=el('p','','notice'),intro=el('p','요청 → 제안 확인 → 선택 적용','muted'),form=el('form','','ai-request-form'),promptLabel=el('label','다음에 무엇을 도와드릴까요?'),prompt=el('textarea'),examples=el('div','','guide-choices'),sources=el('fieldset','','ai-source-list'),sourceLegend=el('legend','이번 AI 검토에 보낼 원본 자료'),sourceList=el('div'),sendConfirm=el('label','','check'),consent=el('input'),start=el('button','현재 입력 저장 후 AI 검토 요청','button primary'),runStatus=el('p','','help-line'),runMeta=el('p','','muted'),cancel=button('진행 중 작업 취소',()=>cancelRun().catch(fail),'button danger'),historyBox=el('details'),historyTitle=el('summary','이전 제안·작업 이어 보기'),historyList=el('div'),result=el('div','','ai-result');
   prompt.id='ai-prompt';
   prompt.maxLength=6000;
   prompt.rows=3;
@@ -39,12 +40,13 @@ export function createAiPanel(host,context) {
 
   consent.type='checkbox';
   consent.required=true;
-  sendConfirm.append(consent,el('span','현재 업무의 제목·답변, 엑셀의 저장된 표, 아래에서 고른 원본 자료의 내용이 GPT API로 전달됨을 확인했습니다.'));
+  sendConfirm.append(consent,el('span','현재 업무의 제목·답변, 엑셀의 선택한 시트·행 범위, 아래에서 고른 원본 자료의 내용이 GPT API로 전달됨을 확인했습니다.'));
   const targetBox=el('fieldset','','ai-targets'),targetLegend=el('legend','검토할 시트'),targetMode=el('select'),targetSelect=el('select'),photoList=el('div','','ai-photo-targets'),targetHint=el('p','','muted');
   targetMode.setAttribute('aria-label','시트 검토 방식');targetSelect.setAttribute('aria-label','AI가 편집할 시트');
   [['single','선택한 시트 한 개'],['photos','사진마다 별도 시트']].forEach(([v,t])=>{const o=el('option',t);o.value=v;targetMode.append(o);});
   targetBox.append(targetLegend,targetMode,targetSelect,photoList,targetHint);targetBox.hidden=context.workflow()!=='EXCEL';
   targetMode.addEventListener('change',()=>{consent.checked=false;refreshSheetTargets();});targetSelect.addEventListener('change',()=>{consent.checked=false;});
+  const rangeBox=el('div','','ai-row-range'),rangeStart=el('input'),rangeCount=el('input');rangeStart.type=rangeCount.type='number';rangeStart.min=rangeCount.min=1;rangeStart.value=1;rangeCount.value=100;rangeStart.setAttribute('aria-label','AI 시작 행');rangeCount.setAttribute('aria-label','AI 행 수');rangeBox.append(el('span','데이터 행 · 제목행 제외'),rangeStart,el('span','부터'),rangeCount,el('span','행만 검토 · 나머지 행 유지'));rangeBox.hidden=true;targetBox.append(rangeBox);function refreshRange(){const target=book().sheets.find(s=>s.id===targetSelect.value),rows=target?.data.rows.length||0,cols=target?.data.columns.length||1;rangeBox.hidden=context.workflow()!=='EXCEL'||targetMode.value==='photos'||rows<=200&&rows*cols<=4000;rangeStart.max=rows;rangeCount.max=Math.min(200,Math.floor(4000/cols));rangeCount.value=Math.min(Number(rangeCount.value)||100,Number(rangeCount.max),rows);rangeStart.value=Math.min(Math.max(1,Number(rangeStart.value)||1),Math.max(1,rows-Number(rangeCount.value)+1));}targetSelect.addEventListener('change',refreshRange);[rangeStart,rangeCount].forEach(n=>n.addEventListener('change',()=>{consent.checked=false;}));
   form.append(targetBox,promptLabel,prompt,examples,sources,sendConfirm,start);
   function book(){return context.sheet?.()?.workbook?.()||{activeSheetId:'sheet1',sheets:[]};}
   function photoSelections(){return [...photoList.querySelectorAll('input:checked')].map(n=>n.value);}
@@ -55,11 +57,11 @@ export function createAiPanel(host,context) {
     targetSelect.replaceChildren();photoList.replaceChildren();
     b.sheets.forEach(s=>{const o=el('option',s.name);o.value=s.id;targetSelect.append(o);
       const source=s.sourceAssetIds?.length===1?assets.find(a=>a.id===s.sourceAssetIds[0]&&!a.archived_at&&['image/png','image/jpeg'].includes(a.media_type)):null;
-      if(!source)return;const row=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=s.id;cb.checked=selected.has(s.id);row.append(cb,el('span',s.name+' ← '+source.original_name));photoList.append(row);cb.addEventListener('change',()=>{consent.checked=false;selectionSummary();});
+      if(!source)return;const row=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=s.id;cb.dataset.localMissing=String(locallyMissing(source));cb.checked=selected.has(s.id)&&!locallyMissing(source);row.append(cb,el('span',s.name+' ← '+source.original_name+(locallyMissing(source)?' · '+localLabel(source):'')));photoList.append(row);cb.addEventListener('change',()=>{consent.checked=false;selectionSummary();});
     });
     targetSelect.value=b.sheets.some(s=>s.id===single)?single:b.activeSheetId;
     if(!photoList.children.length)photoList.append(el('p','사진으로 만들기에서 사진을 등록하고 사진별 시트로 준비하세요. 원본 연결이 해제되거나 삭제된 사진은 다시 선택해야 합니다.','muted'));
-    const batch=targetMode.value==='photos';targetSelect.hidden=batch;photoList.hidden=!batch;sources.hidden=batch;
+    refreshRange();const batch=targetMode.value==='photos';targetSelect.hidden=batch;photoList.hidden=!batch;sources.hidden=batch;
     targetHint.textContent=batch?`사진 한 장당 한 시트에 제안합니다. 한 요청에 최대 ${settings?.limits?.maxAssets??3}장, 합계 6MB입니다. 여러 장은 사진별로 AI를 호출하므로 사용량이 합산됩니다. 기존 셀은 제안을 적용할 때만 바뀝니다.`:'지정한 시트만 읽고 편집을 제안합니다. 다른 시트의 셀은 유지합니다.';
     updateControls();
   }
@@ -85,9 +87,9 @@ export function createAiPanel(host,context) {
     result.querySelectorAll('[data-ai-apply]').forEach(node=>node.disabled=!enabled||!has('apply')||selectedRun?.status!=='READY'||!proposal?.ready);
     result.querySelectorAll('input,textarea').forEach(node=>node.disabled=pending||!context.active()||selectedRun?.status!=='READY'||(node.dataset.aiField==='sheet'&&!context.caps().has('workspace.sheet.update')));
     result.querySelectorAll('button:not([data-ai-apply]):not([data-ai-batch-apply])').forEach(node=>node.disabled=pending);
-    sourceList.querySelectorAll('input').forEach(node=>node.disabled=!enabled||!has('run')||!context.caps().has('workspace.asset.download'));
+    sourceList.querySelectorAll('input').forEach(node=>node.disabled=!enabled||!has('run')||node.dataset.localMissing==='true'||!context.caps().has('workspace.asset.download'));
     result.querySelectorAll('[data-ai-batch-apply]').forEach(node=>node.disabled=!enabled||!has('apply')||!context.caps().has('workspace.sheet.update')||selectedRun?.status!=='READY');
-    targetMode.disabled=!enabled;targetSelect.disabled=!enabled;photoList.querySelectorAll('input').forEach(n=>n.disabled=!enabled||!has('run'));
+    rangeStart.disabled=rangeCount.disabled=rangeBox.hidden||!enabled;targetMode.disabled=!enabled;targetSelect.disabled=!enabled;photoList.querySelectorAll('input').forEach(n=>n.disabled=!enabled||!has('run')||n.dataset.localMissing==='true');
     selectionSummary();
   }
   function fail(error){
@@ -126,7 +128,8 @@ export function createAiPanel(host,context) {
       const row=el('div','','ai-source-row'),l=el('label','','check'),cb=el('input');
       cb.type='checkbox';
       cb.value=asset.id;
-      cb.checked=checked.has(asset.id);
+      cb.dataset.localMissing=String(locallyMissing(asset));
+      cb.checked=checked.has(asset.id)&&!locallyMissing(asset);
       cb.addEventListener('change',()=>{
         if(cb.checked){
           try{
@@ -142,17 +145,17 @@ export function createAiPanel(host,context) {
         }
         selectionSummary();
       });
-      l.append(cb,el('span',asset.original_name+' · '+fileSize(Number(asset.byte_size))));
+      l.append(cb,el('span',asset.original_name+' · '+fileSize(Number(asset.byte_size))+(locallyMissing(asset)?' · '+localLabel(asset)+' · 작업 첨부에서 교체하세요.':'')));
       const link=el('a','원본 내려받아 대조');
       link.href=`/api/assets/${encodeURIComponent(asset.id)}/download`;
       link.className='button small quiet';
       if(!context.caps().has('workspace.asset.download'))link.hidden=true;
-      row.append(l,link);
+      row.append(l);if(!locallyMissing(asset))row.append(link);
       sourceList.append(row);
-      if(context.caps().has('workspace.asset.download')&&['image/png','image/jpeg'].includes(asset.media_type)){
+      if(!locallyMissing(asset)&&context.caps().has('workspace.asset.download')&&['image/png','image/jpeg'].includes(asset.media_type)){
         const detail=el('details','','source-preview'),title=el('summary','원본 사진 펼쳐서 대조'),picture=el('img');picture.alt=asset.original_name+' 원본';picture.loading='lazy';
-        detail.addEventListener('toggle',()=>{if(detail.open&&!picture.hasAttribute('src'))picture.src=`/api/assets/${encodeURIComponent(asset.id)}/download`;});
-        detail.append(title,picture);sourceList.append(detail);
+        detail.addEventListener('toggle',()=>{if(detail.open&&!picture.hasAttribute('src'))picture.src=`/api/my/files/${encodeURIComponent(asset.id)}/preview?v=${asset.version}`;});
+        picture.addEventListener('error',()=>{picture.replaceWith(el('p','이 PC에서 원본을 불러올 수 없습니다. 작업 첨부에서 파일을 교체해 주세요.','missing-file-badge'));},{once:true});detail.append(title,picture);sourceList.append(detail);
       }
     });
     if(!sourceList.children.length)sourceList.append(el('p','이 작업에 연결된 AI용 사진·텍스트 자료가 없습니다. 자료 없이 답변만으로도 시작할 수 있습니다.','muted'));
@@ -280,13 +283,13 @@ export function createAiPanel(host,context) {
       cb.disabled=!context.caps().has('workspace.sheet.update');
       l.append(cb,el('strong',`${selectedRun.targetSheetName||'대상 시트'} 변경 · ${p.sheet.columns.length}열 / ${p.sheet.rows.length}행`));
       const readPreview=el('div');
-      readPreview.append(makePreviewTable(p.sheet));
+      readPreview.append(makePreviewTable(p.sheet,{showFormulas:true}));
       selection.append(l,el('p','이 항목은 요청에 지정한 시트의 구조와 데이터 전체를 제안 표로 바꿉니다. 다른 시트는 유지합니다. 원본과 비교하고 적용할 때만 선택하세요. 숫자·날짜·식별번호를 확인해 주세요.','notice warning'),readPreview);
       const tableDetails=el('details');
       tableDetails.append(el('summary','제안 표의 셀 직접 수정'),makePreviewTable(p.sheet,{
         editable:true,onChange:()=>{
           applyDraft=null;
-          readPreview.replaceChildren(makePreviewTable(p.sheet));
+          readPreview.replaceChildren(makePreviewTable(p.sheet,{showFormulas:true}));
         }
       }),el('p','열 구조의 세부 수정은 제안 적용 후 표 편집에서 진행할 수 있습니다. 이곳은 제안의 셀 값만 수정합니다.','muted'));
       editor.append(tableDetails);
@@ -332,7 +335,7 @@ export function createAiPanel(host,context) {
       const p=item.proposal;
       if(p){card.append(el('p',p.summary),infoList('판독·추정·주의 사항',[...(p.confirmed||[]),...(p.assumptions||[]),...(p.warnings||[])]));
         if(p.questions?.length)card.append(infoList('확인이 필요한 내용',p.questions.map(q=>q.title+' — '+q.reason+(q.recommended?' · '+q.recommended:''))));
-        if(p.sheet)card.append(makePreviewTable(p.sheet));}
+        if(p.sheet)card.append(makePreviewTable(p.sheet,{showFormulas:true}));}
       if(item.message)card.append(el('p',item.message,'notice warning'));
       if(item.diagnostic)card.append(diagnosticDetails(item.diagnostic,item.errorCode));
       if(item.status==='READY'){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=item.sheetId;cb.dataset.batchSheet='true';cb.checked=true;label.append(cb,el('span','이 시트에 제안 적용'));card.append(label);}
@@ -372,6 +375,7 @@ export function createAiPanel(host,context) {
     if(batch&&!photoSheetIds.length)throw Error('사진별로 검토할 시트를 선택하세요.');
     if(new Set(assetIds).size!==assetIds.length)throw Error('같은 사진이 연결된 시트는 한 번에 하나만 선택하세요.');
     if(context.workflow()==='EXCEL'&&!batch&&!targetSheetId)throw Error('검토할 시트를 먼저 추가하세요.');
+    if(assets.some(a=>assetIds.includes(a.id)&&locallyMissing(a)))throw new Error('이 PC에 없는 원본입니다. 작업 첨부에서 파일을 교체하거나 원본 선택을 해제하세요.');
     if(assetIds.length>(settings?.limits?.maxAssets??3))throw new Error('서버 설정에서 허용한 원본 자료 개수를 넘었습니다.');
     if(assets.filter(a=>assetIds.includes(a.id)).reduce((total,a)=>total+Number(a.byte_size||0),0)>(settings?.limits?.maxAssetBytes??6*1024*1024))throw new Error('이번 원본 자료의 합계 크기가 6MB를 넘습니다. 자료를 나누어 선택하세요.');
     pending=true;
@@ -380,7 +384,7 @@ export function createAiPanel(host,context) {
     try{
       const prepared=await context.prepareAi(assetIds);
       const body={
-        prompt:prompt.value.trim(),assetIds,draftVersion:prepared.draftVersion,sheetVersion:prepared.sheetVersion,targetSheetId,photoSheetIds,previousRunId:!batch&&selectedRun&&['READY','APPLIED'].includes(selectedRun.status)&&selectedRun.proposal&&(context.workflow()!=='EXCEL'||(selectedRun.targetSheetId||'sheet1')===targetSheetId)?selectedRun.id:null
+        prompt:prompt.value.trim(),assetIds,...(!batch&&!rangeBox.hidden?{rowStart:Number(rangeStart.value),rowCount:Number(rangeCount.value)}:{}),draftVersion:prepared.draftVersion,sheetVersion:prepared.sheetVersion,targetSheetId,photoSheetIds,previousRunId:!batch&&selectedRun&&['READY','APPLIED'].includes(selectedRun.status)&&selectedRun.proposal&&(selectedRun.rowScope?.rowStart??null)===(!rangeBox.hidden?Number(rangeStart.value):null)&&(selectedRun.rowScope?.rowCount??null)===(!rangeBox.hidden?Number(rangeCount.value):null)&&(context.workflow()!=='EXCEL'||(selectedRun.targetSheetId||'sheet1')===targetSheetId)?selectedRun.id:null
       };
       const fingerprint=JSON.stringify(body);
       if(!requestDraft||requestDraft.fingerprint!==fingerprint)requestDraft={
@@ -410,7 +414,7 @@ export function createAiPanel(host,context) {
     if(!accept.checked)throw new Error('추정·주의 사항과 적용 범위를 확인해 주세요.');
     const now=context.versions();
     if(now.draftVersion!==selectedRun.baseDraftVersion||now.sheetVersion!==selectedRun.baseSheetVersion)throw new Error('이 제안 이후 업무 또는 표가 저장되었습니다. 현재 입력은 유지했습니다. 최신 상태를 기준으로 다시 검토하세요.');
-    if(!confirm(`선택한 ${selected.length}개 항목만 적용할까요? 선택한 표는 표 전체를 교체합니다. 적용되지 않은 수동 입력은 변경하지 않습니다.`))return;
+    const scope=selectedRun.rowScope,extent=scope?.rowStart?`Excel ${scope.rowStart+1}~${scope.rowStart+scope.rowCount}행의 값·수식`:'선택한 시트 전체';if(!confirm(`선택한 ${selected.length}개 항목을 적용할까요? 표 반영 범위: ${extent}.`))return;
     pending=true;
     context.setBusy?.(true);
     updateControls();
@@ -468,7 +472,7 @@ export function createAiPanel(host,context) {
     pollAbort=new AbortController();
     try{
       const run=await request(`/api/ai-runs/${encodeURIComponent(id)}`,{
-        signal:pollAbort.signal
+        signal:pollAbort.signal,loading:false
       });
       if(selectedRun?.id!==id||disposed)return;
       selectedRun=run;
@@ -486,7 +490,7 @@ export function createAiPanel(host,context) {
     }
   }
   return {
-    init,refreshAssets,refreshSheetTargets:()=>{targetSelect.value=book().activeSheetId;refreshSheetTargets();},preparePhotoSheets,attachDraft:()=>loadHistory(true),refreshControls:updateControls,activeRun:()=>selectedRun&&activeStatuses.has(selectedRun.status),isPending:()=>pending,destroy(){
+    init,setRequest(text,sheetId){targetMode.value="single";refreshSheetTargets();targetSelect.value=sheetId;refreshRange();prompt.value=text;consent.checked=false;prompt.focus();},refreshAssets,refreshSheetTargets:()=>{targetSelect.value=book().activeSheetId;refreshSheetTargets();},preparePhotoSheets,attachDraft:()=>loadHistory(true),refreshControls:updateControls,activeRun:()=>selectedRun&&activeStatuses.has(selectedRun.status),isPending:()=>pending,destroy(){
       disposed=true;
       clearTimeout(pollTimer);
       pollAbort?.abort();

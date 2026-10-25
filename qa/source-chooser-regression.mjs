@@ -6,7 +6,7 @@ for(const k of ['window','document','Event','FormData','HTMLElement','HTMLDialog
 const checks=[],requests=[];let chosen;
 const item=(id,name)=>({id,original_name:name,scope_kind:'COMMON'});
 globalThis.fetch=async url=>{const u=new URL(url,'http://localhost');requests.push(u);const page=Number(u.searchParams.get('page')),q=u.searchParams.get('q');return {ok:true,status:200,headers:new Headers({'content-type':'application/json'}),json:async()=>({page,pages:q?1:2,total:q?1:26,items:q?[item('c','검색 결과.txt')]:page===1?[item('a','이전 자료.txt')]:[item('b','다음 자료.txt')]})};};
-const {chooseSource}=await import(pathToFileURL(process.cwd()+'/src/main/resources/static/js/source-chooser.js')+'?v=0.6.0');
+const {chooseSource}=await import(pathToFileURL(process.cwd()+'/src/main/resources/static/js/source-chooser.js')+'?v=0.7.0');
 const wait=async predicate=>{for(let i=0;i<100;i++){if(predicate())return;await new Promise(r=>setTimeout(r,10));}throw Error('timeout');};
 const check=(name,fn)=>{fn();checks.push(name);};
 const click=(d,label)=>{const b=[...d.querySelectorAll('button')].find(x=>x.textContent.startsWith(label));assert.ok(b&&!b.disabled);b.click();};

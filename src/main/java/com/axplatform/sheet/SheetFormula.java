@@ -17,6 +17,10 @@ public final class SheetFormula {
         if(expression==null||expression.length()>500)throw Problem.invalid("계산식은 500자 이내입니다.");
         return new Parser(expression,resolver).parse();
     }
+    public static void validate(List<Map<String,Object>> columns){
+        Map<String,Integer> indexes=new LinkedHashMap<>();for(int i=0;i<columns.size();i++)indexes.put((String)columns.get(i).get("id"),i);
+        var order=new ArrayList<Integer>();var visited=new HashSet<Integer>();var visiting=new HashSet<Integer>();for(int i=0;i<columns.size();i++)visit(i,columns,indexes,visited,visiting,order);
+    }
     public static void calculate(List<Map<String,Object>> columns,List<List<String>> rows) {
         Map<String,Integer> indexes=new LinkedHashMap<>();for(int i=0;i<columns.size();i++)indexes.put((String)columns.get(i).get("id"),i);
         List<Integer> order=new ArrayList<>();Set<Integer> visited=new HashSet<>(),visiting=new HashSet<>();
@@ -41,8 +45,9 @@ public final class SheetFormula {
         }
         visiting.remove(i);visited.add(i);order.add(i);
     }
+    public static String letter(int index){StringBuilder s=new StringBuilder();for(int n=index+1;n>0;n=(n-1)/26)s.insert(0,(char)('A'+(n-1)%26));return s.toString();}
     public static String excel(String expression,Map<String,Integer> index,int row){
-        var m=REF.matcher(expression);StringBuffer out=new StringBuffer();while(m.find()){Integer at=index.get(m.group(1));if(at==null)throw Problem.invalid("계산 참조가 없습니다.");m.appendReplacement(out,Matcher.quoteReplacement(""+(char)('A'+at)+row));}m.appendTail(out);return out.toString();
+        var m=REF.matcher(expression);StringBuffer out=new StringBuffer();while(m.find()){Integer at=index.get(m.group(1));if(at==null)throw Problem.invalid("계산 참조가 없습니다.");m.appendReplacement(out,Matcher.quoteReplacement(letter(at)+row));}m.appendTail(out);return out.toString();
     }
     private static final class Parser {
         final String s;final Function<String,String> values;int p,depth;boolean missing;

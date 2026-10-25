@@ -1,12 +1,12 @@
-import {enhanceDateInput} from './date-picker.js?v=0.6.0';
+import {enhanceDateInput} from './date-picker.js?v=0.9.1';
 import {
   request
 }
-from './request.js?v=0.6.0';
+from './request.js?v=0.9.1';
 import {
   el,button,message,busy,whenText
 }
-from './ui.js?v=0.6.0';
+from './ui.js?v=0.9.1';
 const root=document.getElementById('member-detail'),id=root.dataset.memberId,form=document.getElementById('member-edit'),status=document.getElementById('detail-status');
 let detail;
 async function load() {

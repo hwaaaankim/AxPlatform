@@ -1,3 +1,10 @@
+0.6.1 PC별 저장/교체 검증
+mvn test
+java -cp "target/classes:target/qa-libs/*" qa/StorageOperationsCheck.java src/test/resources/db/test-schema.sql
+Windows는 클래스패스 구분자 : 대신 ; 사용.
+node qa/v061-storage-ui.mjs
+상세 결과와 미실행 환경: docs/V061_VALIDATION.txt
+
 0.6.0 다중 시트 검증 (기존 검사에 추가)
 
 mvn clean test → npm install --prefix qa

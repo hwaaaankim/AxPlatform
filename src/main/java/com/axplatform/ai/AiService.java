@@ -27,7 +27,8 @@ public final class AiService {
             String requestKey,
             long draftVersion,
             long sheetVersion,
-            String previousRunId, String targetSheetId, List<String> photoSheetIds) {
+            String previousRunId, String targetSheetId, List<String> photoSheetIds, Integer rowStart, Integer rowCount) {
+        public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId,String targetSheetId,List<String> photoSheetIds){this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,targetSheetId,photoSheetIds,null,null);}
         public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId) {
             this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,null,List.of());
         }
@@ -195,7 +196,7 @@ public final class AiService {
         normalized.put("draftVersion", command.draftVersion());
         normalized.put("sheetVersion", command.sheetVersion());
         normalized.put("previousRunId", command.previousRunId());
-        normalized.put("targetSheetId",command.targetSheetId());
+        normalized.put("targetSheetId",command.targetSheetId());normalized.put("rowStart",command.rowStart());normalized.put("rowCount",command.rowCount());
         if(command.photoSheetIds()!=null&&command.photoSheetIds().stream().anyMatch(v->v==null||!v.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")))throw Problem.invalid("사진별 시트 ID를 확인하세요.");
         List<String> photoIds=command.photoSheetIds()==null?List.of():List.copyOf(command.photoSheetIds());
         if(photoIds.size()>settings.assets()||new HashSet<>(photoIds).size()!=photoIds.size())throw Problem.invalid("한 번에 사진별 시트는 "+settings.assets()+"개까지 중복 없이 선택하세요.");
@@ -240,10 +241,10 @@ public final class AiService {
                                 @SuppressWarnings("unchecked") var book=(Map<String,Object>)sheets.get(s,draftId).get("workbook");
                                 if(photoIds.isEmpty()) {
                                     if((command.targetSheetId()==null||command.targetSheetId().isBlank())&&WorkbookRules.sheets(book).size()>1)throw Problem.invalid("AI가 편집할 시트를 선택하세요.");
-                                    var target=WorkbookRules.sheet(book,command.targetSheetId());normalized.put("targetSheetId",target.get("id"));normalized.put("targetSheetName",target.get("name"));
+                                    var target=WorkbookRules.sheet(book,command.targetSheetId());normalized.put("targetSheetId",target.get("id"));normalized.put("targetSheetName",target.get("name"));var scope=com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,(String)target.get("id")),command.rowStart(),command.rowCount());com.axplatform.sheet.AiSheetScope.project(WorkbookRules.data(book,(String)target.get("id")),scope);
                                 } else {
                                     Set<String> targetAssets=new LinkedHashSet<>();List<Map<String,Object>> photoTargets=new ArrayList<>();
-                                    for(String sheetId:photoIds){var target=WorkbookRules.sheet(book,sheetId);var sourceIds=(List<?>)target.get("sourceAssetIds");
+                                    if(command.rowStart()!=null||command.rowCount()!=null)throw Problem.invalid("사진별 요청에는 행 범위를 지정하지 않습니다.");for(String sheetId:photoIds){com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,sheetId),null,null);var target=WorkbookRules.sheet(book,sheetId);var sourceIds=(List<?>)target.get("sourceAssetIds");
                                         if(sourceIds.size()!=1)throw Problem.invalid("사진별 시트에는 원본 사진을 한 장씩 연결하세요.");
                                         String assetId=(String)sourceIds.get(0);var asset=assets.metadata(s,assetId);
                                         if(!Set.of("image/png","image/jpeg").contains(asset.get("media_type")))throw Problem.invalid(target.get("name")+": 사진별 시트는 PNG/JPG 사진만 선택하세요.");
@@ -550,7 +551,7 @@ public final class AiService {
                                         ProposalRules.object(proposal.get("sheet")),
                                         sheetVersion,
                                         newDraftVersion,
-                                        Objects.toString(json.object((String)current.get("request_json")).get("targetSheetId"),WorkbookRules.LEGACY_ID));
+                                        Objects.toString(json.object((String)current.get("request_json")).get("targetSheetId"),WorkbookRules.LEGACY_ID),com.axplatform.sheet.AiSheetScope.fromRequest(json.object((String)current.get("request_json"))));
                         newSheetVersion = Inputs.number(changedSheet, "version");
                     }
                     requireOrigin(current, session, s);
@@ -617,7 +618,7 @@ public final class AiService {
         out.put("createdAt", r.get("created_at"));
         out.put("updatedAt", r.get("updated_at"));
         out.put("prompt", request.get("prompt"));
-        out.put("targetSheetId",request.getOrDefault("targetSheetId",WorkbookRules.LEGACY_ID));
+        out.put("targetSheetId",request.getOrDefault("targetSheetId",WorkbookRules.LEGACY_ID));out.put("rowScope",com.axplatform.sheet.AiSheetScope.fromRequest(request));
         out.put("targetSheetName",request.getOrDefault("targetSheetName","시트1"));
         out.put("photoTargets",request.getOrDefault("photoTargets",List.of()));
         out.put("photoSheetIds",request.getOrDefault("photoSheetIds",List.of()));
@@ -636,7 +637,7 @@ public final class AiService {
         final SessionSubject subject;
         final HttpSession session;
         final String id, draftId, workflow;
-        String targetSheetId; int roundOffset;
+        String targetSheetId; int roundOffset;final Map<String,Object> rowScope;
         final long business, baseDraft, baseSheet;
         final Instant deadline;
 
@@ -649,6 +650,7 @@ public final class AiService {
             this.baseDraft = Inputs.number(r, "base_draft_version");
             this.baseSheet = Inputs.number(r, "base_sheet_version");
             this.workflow = (String) json.object((String) r.get("request_json")).get("workflow");
+            this.rowScope=com.axplatform.sheet.AiSheetScope.fromRequest(json.object((String)r.get("request_json")));
             this.targetSheetId=Objects.toString(json.object((String)r.get("request_json")).get("targetSheetId"),WorkbookRules.LEGACY_ID);
             Object value = r.get("lease_until");
             LocalDateTime until =
@@ -736,7 +738,7 @@ public final class AiService {
                             "draftVersion",
                             sheet.get("draftVersion"),
                             "sheet",
-                            sheet.get("sheet"),"sheetId",sheet.get("sheetId"),"sheetName",sheet.get("sheetName"));
+                            com.axplatform.sheet.AiSheetScope.project(ProposalRules.object(sheet.get("sheet")),rowScope),"scope",rowScope,"sheetId",sheet.get("sheetId"),"sheetName",sheet.get("sheetName"));
                 }
                 default -> throw new OpenAiResponses.Failure("AI_TOOL_DENIED", "허용하지 않은 도구 요청입니다.");
             };
@@ -838,6 +840,10 @@ public final class AiService {
         } catch (OpenAiResponses.Failure stopped) {
             fail(id, stopped.code(), stopped.getMessage(), stopped.diagnostic());
         } catch (Problem denied) {
+            if (Set.of("STORAGE_MISSING", "STORAGE_INTEGRITY", "STORAGE_REFERENCE").contains(denied.code())) {
+                fail(id, denied.code(), denied.getMessage());
+                return;
+            }
             String code =
                     denied.status() == 401
                             ? "AI_SESSION_ENDED"

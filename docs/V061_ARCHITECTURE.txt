@@ -1,0 +1,26 @@
+0.6.1 설계 기록
+
+데이터 모델
+DDL 변경 없음. ap_asset의 기존 version/disk_key/root_kind/sha256/byte_size와 ap_storage_binding을 재사용합니다.
+per-device 모드는 DB 바인딩 행을 자동 갱신/삭제하지 않습니다. strict 모드는 기존 비교를 유지합니다.
+local_status/file_exists는 각 요청을 처리한 컴퓨터에서 계산하는 응답 전용 필드입니다. 다른 PC의 상태를 공유 DB의 storage_state에 기록하지 않습니다.
+목록은 경로 안전성·존재·읽기 권한·크기를 확인합니다. 실제 파일 사용/사진 미리보기는 크기와 SHA-256을 검증합니다. 목록 조회는 매번 모든 원본의 전체 해시를 계산하지 않습니다.
+
+교체
+POST /api/my/files/{id}/replace?version=N (multipart file 1개)
+POST /api/admin/files/{id}/replace?version=N
+현재 세션/소유권 또는 관리자 권한, 업로드+보관 권한, 사업/작업 상태, 정책 락, 회원 락, 낙관적 파일 버전을 확인합니다.
+회원별 사용량 증가분을 검사하고 새 UUID 물리 경로에 먼저 저장합니다. DB 커밋이 성공할 때 원본 정보와 파일 버전을 갱신하며 자료 ID는 유지합니다.
+동일 파일에 대한 다른 컴퓨터의 동시 교체는 한 건만 성공합니다. 커밋 실패 시 자신이 새로 쓴 파일만 정리합니다.
+현재 PC의 이전 원본만 커밋 후 제거합니다. 원격 PC의 파일은 건드리지 않습니다. 파일 바이트 자동 동기화/분산 복제 기능은 없습니다.
+이전 원본의 READY AI 제안은 FAILED/AI_SOURCE_CHANGED로 변경합니다. APPLIED 결과와 저장된 시트 데이터는 수정하지 않습니다.
+기존 감사 로그에 ASSET_REPLACE, 활동 로그에 asset.replaced를 기록합니다. 본문·비밀번호·API 키는 기록하지 않습니다.
+
+사진 미리보기
+GET /api/my/files/{id}/preview, GET /api/admin/files/{id}/preview
+현재 권한과 파일 무결성을 검증하고 PNG/JPEG만 반환합니다. no-store/nosniff 적용.
+원본이 없으면 STORAGE_MISSING(404)와 조치 안내를 반환합니다. UI는 깨진 이미지 아이콘 대신 ‘파일 없음’을 표시합니다.
+
+재사용
+자료 관리·작업 첨부·원본 선택창은 공통 asset-replace.js 교체 모달을 사용합니다.
+기존 사진/엑셀/직접/대화 및 다중 시트 데이터 모델과 호환됩니다. 각 업무는 동일 자료 API/소유권/분류 경로를 재사용합니다.

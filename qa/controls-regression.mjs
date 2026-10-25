@@ -4,9 +4,9 @@ import {pathToFileURL} from 'node:url';
 const w=new Window({url:'http://localhost/controls',settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true}});
 for(const k of ['window','document','navigator','location','history','sessionStorage','localStorage','Event','CustomEvent','KeyboardEvent','MouseEvent','FormData','File','DataTransfer','Element','HTMLElement','MutationObserver','HTMLDialogElement','CSS'])Object.defineProperty(globalThis,k,{value:k==='window'?w:w[k],configurable:true});
 const tick=()=>new Promise(r=>setTimeout(r,5)),entry=process.cwd()+'/src/main/resources/static/js/';
-const {enhanceFileInput}=await import(pathToFileURL(entry+'file-picker.js')+'?v=0.6.0');
-const {enhanceDateInput,validDateValue}=await import(pathToFileURL(entry+'date-picker.js')+'?v=0.6.0');
-const {initFormControls}=await import(pathToFileURL(entry+'form-controls.js')+'?v=0.6.0');
+const {enhanceFileInput}=await import(pathToFileURL(entry+'file-picker.js')+'?v=0.7.0');
+const {enhanceDateInput,validDateValue}=await import(pathToFileURL(entry+'date-picker.js')+'?v=0.7.0');
+const {initFormControls}=await import(pathToFileURL(entry+'form-controls.js')+'?v=0.7.0');
 const checks=[];function check(name,fn){fn();checks.push(name);}
 function file(name='a.txt',size=5){return new File(['x'.repeat(size)],name,{type:name.endsWith('.txt')?'text/plain':'application/octet-stream',lastModified:123});}
 function picker(multiple=true,accept='.txt'){const input=document.createElement('input');input.type='file';input.accept=accept;input.multiple=multiple;document.body.append(input);return enhanceFileInput(input);}

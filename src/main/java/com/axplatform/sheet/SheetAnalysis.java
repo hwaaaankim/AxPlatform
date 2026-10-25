@@ -20,12 +20,12 @@ public final class SheetAnalysis {
         for(int i=0;i<columns.size();i++){if(columns.get(i).get("id").equals(group))g=i;if(columns.get(i).get("id").equals(value))v=i;}
         if(!group.isEmpty()&&g<0)throw Problem.invalid("묶을 기준 열이 삭제되었거나 없습니다. 분석 조건을 다시 선택하세요.");
         if(!operation.equals("COUNT")&&(v<0||!"NUMBER".equals(columns.get(v).get("type"))))throw Problem.invalid("집계할 숫자 열을 선택하세요.");
-        Map<String,List<BigDecimal>> buckets=new LinkedHashMap<>();Map<String,Integer> counts=new LinkedHashMap<>();int blanks=0;
-        for(var row:rows){String label=g<0?"전체":row.get(g).isEmpty()?"(빈 값)":row.get(g);buckets.computeIfAbsent(label,k->new ArrayList<>());counts.merge(label,1,Integer::sum);
-            if(!operation.equals("COUNT")){String n=row.get(v);if(n.isEmpty())blanks++;else buckets.get(label).add(new BigDecimal(n));}}
+        Map<String,List<BigDecimal>> buckets=new LinkedHashMap<>();Map<String,Integer> counts=new LinkedHashMap<>();int blanks=0,excluded=0;var issues=ExcelCells.map(ExcelCells.meta(sheet),"issues");var paused=ExcelCells.<Map<String,Object>>map(ExcelCells.meta(sheet),"paused");int rowIndex=0;
+        for(var row:rows){rowIndex++;String vr=v<0?"":ExcelCells.ref(rowIndex,v),gr=g<0?"":ExcelCells.ref(rowIndex,g);var vp=paused.get(vr);var gp=paused.get(gr);boolean provisional=issues.containsKey(vr)||issues.containsKey(gr)||vp!=null&&"CACHED".equals(vp.get("mode"))||gp!=null&&"CACHED".equals(gp.get("mode"));if(provisional){excluded++;continue;}String label=g<0?"전체":row.get(g).isEmpty()?"(빈 값)":row.get(g);buckets.computeIfAbsent(label,k->new ArrayList<>());counts.merge(label,1,Integer::sum);
+            if(!operation.equals("COUNT")){String n=row.get(v);if(n.isEmpty())blanks++;else try{buckets.get(label).add(new BigDecimal(n));}catch(NumberFormatException invalid){excluded++;}}}
         List<Map<String,Object>> points=new ArrayList<>();for(var e:buckets.entrySet()){List<BigDecimal> ns=e.getValue();String number="";
             if(operation.equals("COUNT"))number=String.valueOf(counts.get(e.getKey()));else if(!ns.isEmpty()){BigDecimal n=switch(operation){case "SUM","AVG"->ns.stream().reduce(BigDecimal.ZERO,BigDecimal::add);case "MIN"->ns.stream().min(BigDecimal::compareTo).orElseThrow();case "MAX"->ns.stream().max(BigDecimal::compareTo).orElseThrow();default->throw new IllegalStateException();};if(operation.equals("AVG"))n=n.divide(BigDecimal.valueOf(ns.size()),12,RoundingMode.HALF_UP);number=n.stripTrailingZeros().toPlainString();}
             points.add(Map.of("label",e.getKey(),"value",number,"rows",counts.get(e.getKey()),"numericCount",ns.size()));}
-        return Map.of("sheetVersion",version,"rowCount",rows.size(),"blankValues",blanks,"unit",operation.equals("COUNT")?"건":columns.get(v).get("unit"),"points",points,"config",c);
+        return Map.of("sheetVersion",version,"rowCount",rows.size(),"blankValues",blanks,"excludedFormulaValues",excluded,"unit",operation.equals("COUNT")?"건":columns.get(v).get("unit"),"points",points,"config",c);
     }
 }

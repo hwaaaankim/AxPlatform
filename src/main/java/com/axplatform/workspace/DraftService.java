@@ -73,7 +73,7 @@ public class DraftService {
                 List.of("workspace.draft.list"),
                 () ->
                         db.queryForList(
-                                "SELECT id,title,workflow,status,version,updated_at FROM"
+                                "SELECT id,title,workflow,status,version,updated_at, (SELECT COUNT(*) FROM ap_sheet s WHERE s.draft_id=ap_work_draft.id) AS has_sheet FROM"
                                     + " ap_work_draft WHERE business_scope_id=? AND status"
                                         + (archived ? "='ARCHIVED'" : "<>'ARCHIVED'")
                                         + " ORDER BY updated_at DESC LIMIT 200",
