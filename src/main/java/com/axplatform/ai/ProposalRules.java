@@ -8,7 +8,8 @@ public final class ProposalRules {
     public static final List<String> FIELDS=List.of("purpose","data","result","details","audience");
     private ProposalRules(){}
     public static Map<String,Object> normalize(Map<String,Object> input,String workflow){
-        exact(input,Set.of("summary","confirmed","assumptions","questions","draft","sheet","warnings","ready"));
+        var keys=new HashSet<>(Set.of("summary","confirmed","assumptions","questions","draft","sheet","warnings","ready"));
+        if(input.containsKey("operations"))keys.add("operations");if(input.containsKey("continuation"))keys.add("continuation");exact(input,keys);
         var out=new LinkedHashMap<String,Object>();
         out.put("summary",string(input.get("summary"),2000,true));
         out.put("confirmed",lines(input.get("confirmed"),20,1000));
@@ -38,10 +39,19 @@ public final class ProposalRules {
                 // AI proposals must carry stable row identities; inventing UUIDs here breaks apply idempotency.
                 if(!table.keySet().containsAll(Set.of("columns","rows","rowIds"))||!Set.of("columns","rows","rowIds","excel").containsAll(table.keySet()))throw bad("제안 표 항목을 확인하세요.");
                 if(table.containsKey("excel")&&!Set.of("formulas").containsAll(object(table.get("excel")).keySet()))throw bad("AI 제안에는 셀 수식만 포함할 수 있습니다.");
-                var valid=SheetRules.normalize(com.axplatform.sheet.ExcelCells.aiFormulas(table,0));int rowCount=((List<?>)valid.get("rows")).size(),cols=((List<?>)valid.get("columns")).size();if(rowCount>200||(long)rowCount*cols>4000)throw bad("AI 제안은 최대 200행·4,000셀입니다.");out.put("sheet",valid);
+                var valid=SheetRules.normalize(com.axplatform.sheet.ExcelCells.aiFormulas(table,0));int rowCount=((List<?>)valid.get("rows")).size(),cols=((List<?>)valid.get("columns")).size();if(rowCount>200||(long)rowCount*cols>4000)throw bad("AI 제안은 최대 200행·4,000셀입니다.");long chars=0;for(Object row:(List<?>)valid.get("rows"))for(Object cell:(List<?>)row)chars+=((String)cell).length();if(chars>80000)throw bad("AI 제안은 한 분량당 80,000자 이하입니다. 같은 위치에서 더 작게 나누어 요청하세요.");out.put("sheet",valid);
             }
         }
         catch(RuntimeException invalid){throw bad("제안 표의 열·행·셀·식별자 형식을 확인해 주세요.");}
+        if(input.containsKey("operations")){
+            var operations=com.axplatform.sheet.AiSheetOperations.normalize(input.get("operations"));
+            if(!operations.isEmpty()&&(!"EXCEL".equals(workflow)||sheet!=null))throw bad("AI 변경 작업은 EXCEL에서 표 전체 제안과 분리해 제출하세요.");
+            out.put("operations",operations);
+        }
+        if(input.containsKey("continuation")){
+            if(input.get("continuation")==null)out.put("continuation",null);
+            else{var progress=object(input.get("continuation"));exact(progress,Set.of("hasMore","nextRow","note"));if(!(progress.get("hasMore") instanceof Boolean)||!(progress.get("nextRow") instanceof Number n)||n.doubleValue()!=n.intValue()||n.intValue()<1||n.intValue()>1000001)throw bad("이어 처리 위치를 확인하세요.");out.put("continuation",Map.of("hasMore",progress.get("hasMore"),"nextRow",n.intValue(),"note",string(progress.get("note"),2000,false)));}
+        }
         out.put("warnings",lines(input.get("warnings"),20,1000));
         if(!(input.get("ready") instanceof Boolean ready))throw bad("제안 준비 상태를 확인해 주세요.");
         if(ready&&normalized.stream().anyMatch(q->Boolean.TRUE.equals(q.get("required"))))throw bad("필수 확인 질문이 남은 제안은 준비 완료로 표시할 수 없습니다.");

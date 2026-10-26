@@ -27,7 +27,10 @@ public final class AiService {
             String requestKey,
             long draftVersion,
             long sheetVersion,
-            String previousRunId, String targetSheetId, List<String> photoSheetIds, Integer rowStart, Integer rowCount) {
+            String previousRunId, String targetSheetId, List<String> photoSheetIds, Integer rowStart, Integer rowCount, Boolean operationsOnly, Map<String,Object> continuation, String continuationOf,Boolean replaceContinuationInstructions) {
+        public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId,String targetSheetId,List<String> photoSheetIds,Integer rowStart,Integer rowCount,Boolean operationsOnly,Map<String,Object> continuation,String continuationOf){this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,targetSheetId,photoSheetIds,rowStart,rowCount,operationsOnly,continuation,continuationOf,null);}
+        public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId,String targetSheetId,List<String> photoSheetIds,Integer rowStart,Integer rowCount,Boolean operationsOnly){this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,targetSheetId,photoSheetIds,rowStart,rowCount,operationsOnly,null,null);}
+        public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId,String targetSheetId,List<String> photoSheetIds,Integer rowStart,Integer rowCount){this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,targetSheetId,photoSheetIds,rowStart,rowCount,false);}
         public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId,String targetSheetId,List<String> photoSheetIds){this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,targetSheetId,photoSheetIds,null,null);}
         public Start(String prompt,List<String> assetIds,String requestKey,long draftVersion,long sheetVersion,String previousRunId) {
             this(prompt,assetIds,requestKey,draftVersion,sheetVersion,previousRunId,null,List.of());
@@ -44,7 +47,7 @@ public final class AiService {
             boolean acceptAssumptions) {}
 
     private static final Set<String> APPLY_FIELDS =
-            Set.of("title", "purpose", "data", "result", "details", "audience", "sheet");
+            Set.of("title", "purpose", "data", "result", "details", "audience", "sheet", "operations", "continuation");
     private static final Set<String> ACTIVE = Set.of("QUEUED", "RUNNING");
     private final com.axplatform.operations.AiMeteringService metering;
     private final JdbcTemplate db;
@@ -179,10 +182,14 @@ public final class AiService {
     }
 
     public Map<String, Object> start(
-            SessionSubject s, HttpSession session, String draftId, Start command, String header) {
-        if (command == null) throw Problem.invalid("AI 요청 내용을 입력해 주세요.");
+            SessionSubject s, HttpSession session, String draftId, Start submitted, String header) {
+        if (submitted == null) throw Problem.invalid("AI 요청 내용을 입력해 주세요.");
         SessionLease.require(session, s);
         settings.require();
+        var already=existingContinuation(s,draftId,submitted,header);if(already!=null)return already;
+        String allocatedId=UUID.randomUUID().toString();
+        var resolved=resolveContinuation(s,draftId,submitted,allocatedId);
+        final Start command=resolved.command();
         String requestKey = key(command.requestKey(), header),
                 prompt = Inputs.text(command.prompt(), 12000, "AI 요청"),
                 originSessionHash = sessionHash(session, s);
@@ -196,13 +203,16 @@ public final class AiService {
         normalized.put("draftVersion", command.draftVersion());
         normalized.put("sheetVersion", command.sheetVersion());
         normalized.put("previousRunId", command.previousRunId());
+        normalized.put("operationsOnly",Boolean.TRUE.equals(command.operationsOnly()));
+        if(Boolean.TRUE.equals(command.operationsOnly())&&(command.rowStart()!=null||command.rowCount()!=null))throw Problem.invalid("전체 변경 작업과 행 범위 편집은 함께 요청할 수 없습니다.");
         normalized.put("targetSheetId",command.targetSheetId());normalized.put("rowStart",command.rowStart());normalized.put("rowCount",command.rowCount());
         if(command.photoSheetIds()!=null&&command.photoSheetIds().stream().anyMatch(v->v==null||!v.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")))throw Problem.invalid("사진별 시트 ID를 확인하세요.");
         List<String> photoIds=command.photoSheetIds()==null?List.of():List.copyOf(command.photoSheetIds());
         if(photoIds.size()>settings.assets()||new HashSet<>(photoIds).size()!=photoIds.size())throw Problem.invalid("한 번에 사진별 시트는 "+settings.assets()+"개까지 중복 없이 선택하세요.");
         normalized.put("photoSheetIds",photoIds);
-        String hash = Crypto.sha256(json.write(normalized));
-        String id = UUID.randomUUID().toString();
+        if(!resolved.plan().isEmpty())normalized.put("continuation",resolved.plan());
+        String hash = Crypto.sha256(json.write(resolved.plan().isEmpty()?normalized:submitted));
+        String id = allocatedId;
         boolean[] created = {false};
         Map<String, Object> result =
                 access.business(
@@ -212,6 +222,7 @@ public final class AiService {
                         List.of("workspace.ai.run"),
                         () -> {
                             SessionLease.require(session, s);
+                            db.queryForList("SELECT id FROM ap_account WHERE id=? FOR UPDATE",s.accountId());
                             var duplicates =
                                     db.queryForList(
                                             "SELECT * FROM ap_ai_run WHERE account_id=? AND"
@@ -228,6 +239,12 @@ public final class AiService {
                                             "같은 요청 키가 다른 AI 요청에 사용되었습니다.");
                                 return publicRun(previous);
                             }
+                            if(command.continuationOf()!=null&&!command.continuationOf().isBlank()){
+                                var predecessor=row(command.continuationOf());owns(s,predecessor);
+                                if(!draftId.equals(predecessor.get("draft_id")))throw Problem.invalid("다른 작업의 이어 처리 기준입니다.");
+                                var child=continuationChild(s,draftId,command.continuationOf());if(child!=null)return publicRun(child);
+                                AiContinuation.resume(json.object((String)predecessor.get("request_json")),(String)predecessor.get("status"),predecessor.get("result_json")==null?Map.of():json.object((String)predecessor.get("result_json")),Objects.toString(predecessor.get("safe_error_code"),""));
+                            }
                             var draft = drafts.get(s, draftId);
                             requireActive(draft);
                             boolean excel = "EXCEL".equals(draft.get("workflow"));
@@ -241,10 +258,10 @@ public final class AiService {
                                 @SuppressWarnings("unchecked") var book=(Map<String,Object>)sheets.get(s,draftId).get("workbook");
                                 if(photoIds.isEmpty()) {
                                     if((command.targetSheetId()==null||command.targetSheetId().isBlank())&&WorkbookRules.sheets(book).size()>1)throw Problem.invalid("AI가 편집할 시트를 선택하세요.");
-                                    var target=WorkbookRules.sheet(book,command.targetSheetId());normalized.put("targetSheetId",target.get("id"));normalized.put("targetSheetName",target.get("name"));var scope=com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,(String)target.get("id")),command.rowStart(),command.rowCount());com.axplatform.sheet.AiSheetScope.project(WorkbookRules.data(book,(String)target.get("id")),scope);
+                                    var target=WorkbookRules.sheet(book,command.targetSheetId());normalized.put("targetSheetId",target.get("id"));normalized.put("targetSheetName",target.get("name"));if(Boolean.TRUE.equals(command.operationsOnly()))com.axplatform.sheet.AiSheetOperations.sample(WorkbookRules.data(book,(String)target.get("id")));else {var scope=com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,(String)target.get("id")),command.rowStart(),command.rowCount());com.axplatform.sheet.AiSheetScope.project(WorkbookRules.data(book,(String)target.get("id")),scope);}
                                 } else {
                                     Set<String> targetAssets=new LinkedHashSet<>();List<Map<String,Object>> photoTargets=new ArrayList<>();
-                                    if(command.rowStart()!=null||command.rowCount()!=null)throw Problem.invalid("사진별 요청에는 행 범위를 지정하지 않습니다.");for(String sheetId:photoIds){com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,sheetId),null,null);var target=WorkbookRules.sheet(book,sheetId);var sourceIds=(List<?>)target.get("sourceAssetIds");
+                                    if(Boolean.TRUE.equals(command.operationsOnly()))throw Problem.invalid("사진 판독은 전체 변경 작업 모드를 사용하지 않습니다.");if(command.rowStart()!=null||command.rowCount()!=null)throw Problem.invalid("사진별 요청에는 행 범위를 지정하지 않습니다.");for(String sheetId:photoIds){com.axplatform.sheet.AiSheetScope.range(WorkbookRules.data(book,sheetId),null,null);var target=WorkbookRules.sheet(book,sheetId);var sourceIds=(List<?>)target.get("sourceAssetIds");
                                         if(sourceIds.size()!=1)throw Problem.invalid("사진별 시트에는 원본 사진을 한 장씩 연결하세요.");
                                         String assetId=(String)sourceIds.get(0);var asset=assets.metadata(s,assetId);
                                         if(!Set.of("image/png","image/jpeg").contains(asset.get("media_type")))throw Problem.invalid(target.get("name")+": 사진별 시트는 PNG/JPG 사진만 선택하세요.");
@@ -262,6 +279,15 @@ public final class AiService {
                             if (!(draft.get("assetIds") instanceof List<?> linked)
                                     || !linked.containsAll(selected))
                                 throw Problem.invalid("현재 초안에 연결된 첨부만 명시 선택할 수 있습니다.");
+                            if(!resolved.plan().isEmpty()){
+                                var queued=new ArrayList<>((List<String>)resolved.plan().get("sourceAssetIds"));
+                                for(String reference:selected)if(!queued.contains(reference))queued.add(reference);
+                                if(!(draft.get("assetIds") instanceof List<?> queuedLinked)||!queuedLinked.containsAll(queued))throw Problem.invalid("대기열의 모든 사진을 현재 작업 첨부에 연결하세요.");
+                                var sourceVersions=new LinkedHashMap<>(AiContinuation.object(resolved.plan().get("sourceVersions")));
+                                for(String assetId:queued){var meta=assets.metadata(s,assetId);if(Inputs.number(meta,"business_scope_id")!=business||"PHOTO".equals(resolved.plan().get("mode"))&&!Set.of("image/png","image/jpeg").contains(meta.get("media_type")))throw Problem.invalid("현재 사업의 자료만 사용하고 사진 대기열에는 JPG/PNG 원본을 선택하세요.");String revision=Objects.toString(meta.get("version"),"");if(sourceVersions.containsKey(assetId)&&!sourceVersions.get(assetId).equals(revision))throw new Problem(409,"AI_ASSET_CHANGED","이어 처리 중 원본 자료가 교체되었습니다. 완료한 부분은 유지했습니다. 새 원본의 시작 위치를 확인해 새로운 작업으로 진행하세요.");sourceVersions.put(assetId,revision);}
+                                resolved.plan().put("sourceVersions",sourceVersions);
+                                if(!selected.isEmpty())resolved.plan().put("sourceName",assets.metadata(s,selected.get(0)).get("original_name"));
+                            }
                             long bytes = 0;
                             for (String assetId : selected) {
                                 var metadata = assets.metadata(s, assetId);
@@ -284,10 +310,10 @@ public final class AiService {
                                 var previousRequest=json.object((String)previous.get("request_json"));
                                 if(excel&&!Objects.equals(previousRequest.getOrDefault("targetSheetId",WorkbookRules.LEGACY_ID),normalized.get("targetSheetId")))
                                     throw Problem.invalid("다른 시트의 제안을 이어서 사용할 수 없습니다. 새 요청으로 시작하세요.");
-                                previousProposal =
-                                        ProposalRules.object(
-                                                json.object((String) previous.get("result_json"))
-                                                        .get("proposal"));
+                                previousProposal = new LinkedHashMap<>(ProposalRules.object(
+                                                json.object((String) previous.get("result_json")).get("proposal")));
+                                var priorApplied=previous.get("applied_json")==null?Map.<String,Object>of():json.object((String)previous.get("applied_json"));
+                                previousProposal.put("_context",Map.of("status",previous.get("status"),"appliedFields",priorApplied.getOrDefault("fields",List.of()),"note","이미 적용한 항목은 현재 저장본에 반영되어 있습니다. 새 요청 없이 기존 행 추가·열 추가를 반복하지 마세요. 이전 버전으로 적용 항목을 알 수 없으면 현재 저장본을 기준으로 질문하세요."));
                             }
                             LocalDateTime timestamp = now(),
                                     day = LocalDate.now(clock).atStartOfDay();
@@ -360,9 +386,68 @@ public final class AiService {
         return result;
     }
 
+    private Map<String,Object> existingContinuation(SessionSubject actor,String draftId,Start input,String header){
+        boolean next=input.continuationOf()!=null&&!input.continuationOf().isBlank();if(!next&&(input.continuation()==null||input.continuation().isEmpty()))return null;
+        key(input.requestKey(),header);var draft=drafts.get(actor,draftId);
+        return access.business(actor,Inputs.number(draft,"business_scope_id"),false,List.of("workspace.ai.run"),()->{
+            db.queryForList("SELECT id FROM ap_account WHERE id=? FOR UPDATE",actor.accountId());
+            var duplicates=db.queryForList("SELECT * FROM ap_ai_run WHERE account_id=? AND request_key=?",actor.accountId(),input.requestKey());
+            if(!duplicates.isEmpty()){var found=duplicates.get(0);if(!draftId.equals(found.get("draft_id"))||!Crypto.sha256(json.write(input)).equals(found.get("request_hash")))throw new Problem(409,"IDEMPOTENCY_CONFLICT","같은 요청 키가 다른 이어 처리에 사용되었습니다.");return publicRun(found);}
+            if(next){var parent=row(input.continuationOf());owns(actor,parent);if(!draftId.equals(parent.get("draft_id")))throw Problem.invalid("다른 작업의 체크포인트입니다.");var child=continuationChild(actor,draftId,input.continuationOf());if(child!=null)return publicRun(child);}
+            return null;
+        });
+    }
+
+    private Map<String,Object> continuationChild(SessionSubject actor,String draftId,String parent){
+        var children=db.queryForList("SELECT id FROM ap_ai_run WHERE account_id=? AND draft_id=? AND request_json LIKE ? ORDER BY created_at DESC,id DESC LIMIT 1",actor.accountId(),draftId,"%\"parentRunId\":\""+parent+"\"%");
+        return children.isEmpty()?null:row((String)children.get(0).get("id"));
+    }
+
+    private record Resolved(Start command,Map<String,Object> plan){}
+    @SuppressWarnings("unchecked") private Resolved resolveContinuation(SessionSubject actor,String draftId,Start input,String runId){
+        boolean next=input.continuationOf()!=null&&!input.continuationOf().isBlank();
+        if(!next&&Boolean.TRUE.equals(input.replaceContinuationInstructions()))throw Problem.invalid("이어 처리의 확인 답변에서만 기존 지침을 교체할 수 있습니다.");
+        if(!next&&(input.continuation()==null||input.continuation().isEmpty()))return new Resolved(input,Map.of());
+        if(next&&input.continuation()!=null&&!input.continuation().isEmpty())throw Problem.invalid("새 이어 처리 설정과 이전 체크포인트를 함께 지정할 수 없습니다.");
+        var draft=drafts.get(actor,draftId);if(!"EXCEL".equals(draft.get("workflow")))throw Problem.invalid("이어 처리는 엑셀 작업에서 사용할 수 있습니다.");
+        var book=(Map<String,Object>)sheets.get(actor,draftId).get("workbook");
+        Map<String,Object> plan;String previousId=null;
+        if(next){
+            var previous=row(input.continuationOf());owns(actor,previous);if(!draftId.equals(previous.get("draft_id")))throw Problem.invalid("다른 작업의 체크포인트입니다.");
+            var request=json.object((String)previous.get("request_json"));
+            plan=new LinkedHashMap<>(AiContinuation.resume(request,(String)previous.get("status"),previous.get("result_json")==null?Map.of():json.object((String)previous.get("result_json")),Objects.toString(previous.get("safe_error_code"),"")));
+            plan.put("parentRunId",input.continuationOf());
+            if("APPLIED".equals(previous.get("status"))||"READY".equals(previous.get("status")))previousId=input.continuationOf();
+            if("READY".equals(previous.get("status"))||(Set.of("FAILED","CANCELLED").contains(previous.get("status"))&&AiContinuation.REDUCE.contains(Objects.toString(previous.get("safe_error_code"),""))&&AiContinuation.number(AiContinuation.object(request.get("continuation")),"chunkRows")==1)){
+                String answer=Inputs.text(input.prompt(),12000,"추가 답변");
+                if(answer.equals(AiContinuation.str(plan,"originalPrompt")))throw Problem.invalid("AI가 확인한 질문에 답변을 입력하세요.");
+                plan.put("originalPrompt",AiContinuation.instructions(plan,answer,Boolean.TRUE.equals(input.replaceContinuationInstructions())));
+            }else if(Boolean.TRUE.equals(input.replaceContinuationInstructions()))throw Problem.invalid("AI의 확인 질문 또는 최소 분량 안내에 답할 때 지침을 교체하세요.");
+            if(input.targetSheetId()!=null&&!input.targetSheetId().isBlank()&&!input.targetSheetId().equals(plan.get("targetSheetId"))){
+                if("RANGE".equals(plan.get("mode")))throw Problem.invalid("범위 검토는 원본 시트를 바꿀 수 없습니다.");
+                var original=WorkbookRules.data(book,AiContinuation.str(plan,"targetSheetId"));var destination=WorkbookRules.data(book,input.targetSheetId());
+                if(!((List<?>)destination.get("rows")).isEmpty()||!original.get("columns").equals(destination.get("columns")))throw Problem.invalid("이어 받을 시트는 같은 열 구성의 빈 시트여야 합니다.");
+                if(com.axplatform.sheet.ExcelCells.hasAny(original))throw Problem.invalid("개별 Excel 수식이 있는 표는 참조를 확인한 새 시트를 준비한 뒤 별도 작업으로 이어 주세요. 완료한 데이터는 보존했습니다.");
+                plan.put("targetSheetId",input.targetSheetId());
+                if("PHOTO".equals(plan.get("mode"))){var targets=new ArrayList<>((List<String>)plan.get("sourceSheetIds"));int index=AiContinuation.number(plan,"sourceIndex");String prior=targets.get(index);for(int i=index;i<targets.size();i++)if(targets.get(i).equals(prior))targets.set(i,input.targetSheetId());plan.put("sourceSheetIds",targets);}
+            }
+            plan=AiContinuation.prepare(plan,book);
+        }else{plan=new LinkedHashMap<>(AiContinuation.initial(input.continuation(),book,input.targetSheetId(),runId));plan.put("originalPrompt",input.prompt());plan.put("referenceAssetIds",input.assetIds()==null?List.of():ids(input.assetIds(),settings.assets()));}
+        String mode=AiContinuation.str(plan,"mode");List<String> assets=mode.equals("PHOTO")?List.of(((List<String>)plan.get("sourceAssetIds")).get(AiContinuation.number(plan,"sourceIndex"))):(List<String>)plan.getOrDefault("referenceAssetIds",List.of());
+        Integer start=mode.equals("RANGE")?AiContinuation.number(plan,"rangeStart"):null,count=mode.equals("RANGE")?AiContinuation.number(plan,"chunkRows"):null;
+        if(next&&previousId!=null){var priorRequest=json.object((String)row(previousId).get("request_json"));if(!Objects.equals(priorRequest.get("targetSheetId"),plan.get("targetSheetId")))previousId=null;}
+        return new Resolved(new Start(AiContinuation.str(plan,"originalPrompt"),assets,input.requestKey(),input.draftVersion(),input.sheetVersion(),previousId,AiContinuation.str(plan,"targetSheetId"),List.of(),start,count,Boolean.TRUE.equals(plan.get("operationsOnly")),null,input.continuationOf()),plan);
+    }
+
     private void requireActive(Map<String, Object> draft) {
         if ("ARCHIVED".equals(draft.get("status")))
             throw new Problem(409, "DRAFT_ARCHIVED", "보관된 초안은 먼저 복원해 주세요.");
+    }
+
+    private void requireContinuationSources(SessionSubject actor,Map<String,Object> plan,List<String> selected){
+        var versions=AiContinuation.object(plan.get("sourceVersions"));
+        for(String assetId:selected)if(versions.containsKey(assetId)&&!Objects.equals(versions.get(assetId),Objects.toString(assets.metadata(actor,assetId).get("version"),"")))
+            throw new Problem(409,"AI_ASSET_CHANGED","이어 처리 중 원본 사진이 교체되었습니다. 완료한 부분은 보존했습니다. 새 원본의 시작 위치를 확인한 뒤 새 작업으로 진행하세요.");
     }
 
     public List<Map<String, Object>> list(SessionSubject s, String draftId) {
@@ -373,13 +458,14 @@ public final class AiService {
                 false,
                 List.of("workspace.ai.read"),
                 () -> {
-                    List<Map<String, Object>> out = new ArrayList<>();
-                    for (var r :
-                            db.queryForList(
-                                    "SELECT * FROM ap_ai_run WHERE account_id=? AND draft_id=?"
-                                            + " ORDER BY created_at DESC,id DESC LIMIT 10",
-                                    s.accountId(),
-                                    draftId)) out.add(publicRun(r));
+                    List<Map<String,Object>> out=new ArrayList<>();Set<String> roots=new HashSet<>();
+                    for(var r:db.queryForList("SELECT * FROM ap_ai_run WHERE account_id=? AND draft_id=? ORDER BY created_at DESC,id DESC LIMIT 30",s.accountId(),draftId)){
+                        var run=publicRun(r);out.add(run);var plan=AiContinuation.object(run.get("continuation"));if(!plan.isEmpty())roots.add(AiContinuation.str(plan,"rootId"));
+                    }
+                    // rootId is a server UUID. Extract only that fixed-size marker, never old proposals.
+                    for(var meta:db.queryForList("SELECT id,SUBSTRING(request_json,LOCATE('\"rootId\":\"',request_json)+10,36) AS continuation_root,CASE WHEN request_json LIKE '%\"abandoned\":true%' OR (status='APPLIED' AND result_json LIKE '%\"done\":true%') THEN 1 ELSE 0 END AS chain_closed FROM ap_ai_run WHERE account_id=? AND draft_id=? AND request_json LIKE '%\"rootId\":\"%' ORDER BY created_at DESC,id DESC",s.accountId(),draftId)){
+                        if(roots.add(Objects.toString(meta.get("continuation_root"),""))&&((Number)meta.get("chain_closed")).intValue()==0)out.add(publicRun(row((String)meta.get("id"))));
+                    }
                     return out;
                 });
     }
@@ -399,7 +485,8 @@ public final class AiService {
                 });
     }
 
-    public Map<String, Object> cancel(SessionSubject s, HttpSession session, String id) {
+    public Map<String,Object> cancel(SessionSubject s,HttpSession session,String id){return cancel(s,session,id,false);}
+    public Map<String, Object> cancel(SessionSubject s, HttpSession session, String id,boolean abandon) {
         SessionLease.require(session, s);
         var initial = row(id);
         owns(s, initial);
@@ -410,8 +497,14 @@ public final class AiService {
                 List.of("workspace.ai.cancel"),
                 () -> {
                     SessionLease.require(session, s);
+                    if(abandon)db.queryForList("SELECT id FROM ap_account WHERE id=? FOR UPDATE",s.accountId());
                     var current = row(id);
                     owns(s, current);
+                    if(abandon){
+                        var requested=json.object((String)current.get("request_json"));var plan=AiContinuation.object(requested.get("continuation"));if(plan.isEmpty())throw Problem.invalid("종료할 이어 처리 작업이 없습니다.");String root=AiContinuation.str(plan,"rootId");
+                        for(var candidate:db.queryForList("SELECT * FROM ap_ai_run WHERE account_id=? AND draft_id=?",s.accountId(),current.get("draft_id"))){var req=json.object((String)candidate.get("request_json"));var cplan=AiContinuation.object(req.get("continuation"));if(root.equals(cplan.get("rootId"))){var updated=new LinkedHashMap<>(cplan);updated.put("abandoned",true);req.put("continuation",updated);db.update("UPDATE ap_ai_run SET request_json=?,status=CASE WHEN status IN ('QUEUED','RUNNING','READY') THEN 'CANCELLED' ELSE status END,updated_at=? WHERE id=?",json.write(req),now(),candidate.get("id"));}}
+                        return publicRun(row(id));
+                    }
                     if (ACTIVE.contains(current.get("status"))
                             || "READY".equals(current.get("status"))) {
                         db.update(
@@ -440,7 +533,7 @@ public final class AiService {
         String requestKey = key(command.requestKey(), header);
         if (command.fields() == null
                 || command.fields().isEmpty()
-                || command.fields().size() > 7
+                || command.fields().size() > 9
                 || new HashSet<>(command.fields()).size() != command.fields().size()
                 || !APPLY_FIELDS.containsAll(command.fields()))
             throw Problem.invalid("적용할 항목을 중복 없이 선택해 주세요.");
@@ -515,6 +608,19 @@ public final class AiService {
                     if (command.fields().contains("sheet")
                             && (!excel || proposal.get("sheet") == null))
                         throw Problem.invalid("현재 제안에 적용할 EXCEL 표가 없습니다.");
+                    var runRequest=json.object((String)current.get("request_json"));
+                    if(command.fields().contains("sheet")&&Boolean.TRUE.equals(runRequest.get("operationsOnly")))throw Problem.invalid("표본을 읽은 요청에서는 전체 표를 교체할 수 없습니다. 변경 작업 제안을 요청하세요.");
+                    if(command.fields().contains("operations")&&(!excel||!(proposal.get("operations") instanceof List<?> ops)||ops.isEmpty()))throw Problem.invalid("적용할 AI 변경 작업이 없습니다.");
+                    if(command.fields().contains("operations")&&!com.axplatform.sheet.AiSheetScope.fromRequest(runRequest).isEmpty())throw Problem.invalid("행 범위 편집에서는 셀 표 제안만 적용합니다. 전체 변경 작업 모드에서 다시 요청하세요.");
+                    Map<String,Object> continuationResult=Map.of();
+                    var continuationPlan=AiContinuation.object(runRequest.get("continuation"));
+                    if(!continuationPlan.isEmpty()){
+                        requireContinuationSources(s,continuationPlan,requestAssets(current));
+                        var storedProposal=ProposalRules.object(json.object((String)current.get("result_json")).get("proposal"));
+                        if(!Objects.equals(storedProposal.get("continuation"),proposal.get("continuation")))throw Problem.invalid("이어 처리 위치는 직접 변경할 수 없습니다. 현재 분량을 다시 요청하세요.");
+                        continuationResult=AiContinuation.result(continuationPlan,proposal,(Map<String,Object>)sheets.get(s,draftId).get("workbook"));
+                        if(!command.fields().contains(continuationResult.get("requiredField")))throw Problem.invalid("이어 처리 위치는 이번 분량의 데이터를 함께 적용할 때만 저장할 수 있습니다.");
+                    }else if(command.fields().contains("continuation"))throw Problem.invalid("이어 처리 종료 확인이 없는 제안입니다.");
                     Map<String, Object>
                             suggestedDraft = ProposalRules.object(proposal.get("draft")),
                             suggestedAnswers = ProposalRules.object(suggestedDraft.get("answers"));
@@ -543,6 +649,7 @@ public final class AiService {
                                             command.draftVersion()));
                     long newDraftVersion = Inputs.number(changed, "version"),
                             newSheetVersion = sheetVersion;
+                    List<Map<String,Object>> appliedOperationPreview=List.of();
                     if (command.fields().contains("sheet")) {
                         var changedSheet =
                                 sheets.applyAi(
@@ -554,13 +661,20 @@ public final class AiService {
                                         Objects.toString(json.object((String)current.get("request_json")).get("targetSheetId"),WorkbookRules.LEGACY_ID),com.axplatform.sheet.AiSheetScope.fromRequest(json.object((String)current.get("request_json"))));
                         newSheetVersion = Inputs.number(changedSheet, "version");
                     }
+                    if(command.fields().contains("operations")){
+                        @SuppressWarnings("unchecked") var book=(Map<String,Object>)sheets.get(s,draftId).get("workbook");
+                        var operationResult=com.axplatform.sheet.AiSheetOperations.apply(book,Objects.toString(runRequest.get("targetSheetId"),WorkbookRules.LEGACY_ID),proposal.get("operations"));
+                        appliedOperationPreview=operationResult.preview();
+                        var changedSheet=sheets.applyAiWorkbook(s,draftId,operationResult.workbook(),sheetVersion,newDraftVersion);
+                        newSheetVersion=Inputs.number(changedSheet,"version");
+                    }
                     requireOrigin(current, session, s);
                     var applied =
                             Map.of(
                                     "draftVersion",
                                     newDraftVersion,
                                     "sheetVersion",
-                                    newSheetVersion);
+                                    newSheetVersion,"fields",command.fields());
                     db.update(
                             "UPDATE ap_ai_run SET status='APPLIED',phase='선택 항목 적용"
                                 + " 완료',result_json=?,apply_key=?,apply_hash=?,applied_json=?,updated_at=?"
@@ -570,7 +684,7 @@ public final class AiService {
                                             "proposal",
                                             proposal,
                                             "toolNames",
-                                            resultTools(current))),
+                                            resultTools(current),"operationsPreview",appliedOperationPreview,"continuationResult",continuationResult)),
                             requestKey,
                             hash,
                             json.write(applied),
@@ -618,11 +732,15 @@ public final class AiService {
         out.put("createdAt", r.get("created_at"));
         out.put("updatedAt", r.get("updated_at"));
         out.put("prompt", request.get("prompt"));
+        out.put("operationsOnly",Boolean.TRUE.equals(request.get("operationsOnly")));
+        out.put("operationsPreview",r.get("result_json")==null?List.of():json.object((String)r.get("result_json")).getOrDefault("operationsPreview",List.of()));
         out.put("targetSheetId",request.getOrDefault("targetSheetId",WorkbookRules.LEGACY_ID));out.put("rowScope",com.axplatform.sheet.AiSheetScope.fromRequest(request));
         out.put("targetSheetName",request.getOrDefault("targetSheetName","시트1"));
         out.put("photoTargets",request.getOrDefault("photoTargets",List.of()));
         out.put("photoSheetIds",request.getOrDefault("photoSheetIds",List.of()));
         out.put("sheetResults",r.get("result_json")==null?List.of():json.object((String)r.get("result_json")).getOrDefault("sheetResults",List.of()));
+        var continuationPlan=AiContinuation.object(request.get("continuation"));
+        out.put("continuation",AiContinuation.publicState(continuationPlan,(String)r.get("status"),r.get("result_json")==null?Map.of():json.object((String)r.get("result_json")),Objects.toString(r.get("safe_error_code"),"")));
         out.put("toolNames", resultTools(r));
         return out;
     }
@@ -637,7 +755,7 @@ public final class AiService {
         final SessionSubject subject;
         final HttpSession session;
         final String id, draftId, workflow;
-        String targetSheetId; int roundOffset;final Map<String,Object> rowScope;
+        String targetSheetId; int roundOffset;final Map<String,Object> rowScope,continuation;final boolean operationsOnly;
         final long business, baseDraft, baseSheet;
         final Instant deadline;
 
@@ -651,6 +769,8 @@ public final class AiService {
             this.baseSheet = Inputs.number(r, "base_sheet_version");
             this.workflow = (String) json.object((String) r.get("request_json")).get("workflow");
             this.rowScope=com.axplatform.sheet.AiSheetScope.fromRequest(json.object((String)r.get("request_json")));
+            this.continuation=AiContinuation.object(json.object((String)r.get("request_json")).get("continuation"));
+            this.operationsOnly=Boolean.TRUE.equals(json.object((String)r.get("request_json")).get("operationsOnly"));
             this.targetSheetId=Objects.toString(json.object((String)r.get("request_json")).get("targetSheetId"),WorkbookRules.LEGACY_ID);
             Object value = r.get("lease_until");
             LocalDateTime until =
@@ -709,6 +829,7 @@ public final class AiService {
                             if (Inputs.number(m, "business_scope_id") != business)
                                 throw Problem.invalid("첨부 범위가 변경되었습니다.");
                         }
+                        requireContinuationSources(subject,continuation,requestAssets(current));
                         return null;
                     });
         }
@@ -732,13 +853,14 @@ public final class AiService {
                 case "read_current_sheet" -> {
                     if (!workflow.equals("EXCEL")) throw Problem.invalid("EXCEL 업무가 아닙니다.");
                     var sheet = sheets.getSheet(subject, draftId,targetSheetId);
+                    if(operationsOnly){var summary=new LinkedHashMap<>(com.axplatform.sheet.AiSheetOperations.sample(ProposalRules.object(sheet.get("sheet"))));summary.put("version",sheet.get("version"));summary.put("draftVersion",sheet.get("draftVersion"));summary.put("sheetId",sheet.get("sheetId"));summary.put("sheetName",sheet.get("sheetName"));summary.put("continuation",continuation);yield summary;}
                     yield Map.of(
                             "version",
                             sheet.get("version"),
                             "draftVersion",
                             sheet.get("draftVersion"),
                             "sheet",
-                            com.axplatform.sheet.AiSheetScope.project(ProposalRules.object(sheet.get("sheet")),rowScope),"scope",rowScope,"sheetId",sheet.get("sheetId"),"sheetName",sheet.get("sheetName"));
+                            com.axplatform.sheet.AiSheetScope.project(ProposalRules.object(sheet.get("sheet")),rowScope),"scope",rowScope,"sheetId",sheet.get("sheetId"),"sheetName",sheet.get("sheetName"),"continuation",continuation);
                 }
                 default -> throw new OpenAiResponses.Failure("AI_TOOL_DENIED", "허용하지 않은 도구 요청입니다.");
             };
@@ -801,12 +923,20 @@ public final class AiService {
             OpenAiResponses.Result result =
                     provider.run(
                             context.workflow,
-                            (String) request.get("prompt"),
+                            (String) request.get("prompt")+AiContinuation.instruction(context.continuation),
                             (Map<String, Object>) request.get("previousProposal"),
                             sources,
                             context.deadline,
                             context);
             context.checkpoint();
+            var storedResult=new LinkedHashMap<String,Object>();storedResult.put("proposal",result.proposal());storedResult.put("toolNames",result.tools());
+            if(!context.continuation.isEmpty()&&Boolean.TRUE.equals(result.proposal().get("ready"))){try{storedResult.put("continuationResult",AiContinuation.result(context.continuation,result.proposal(),(Map<String,Object>)sheets.get(s,context.draftId).get("workbook")));}catch(Problem invalid){throw new OpenAiResponses.Failure(invalid.code().equals("AI_OUTPUT_LIMIT")?"AI_OUTPUT_LIMIT":"AI_CONTINUATION_INVALID",invalid.getMessage());}}
+            if(context.operationsOnly&&result.proposal().get("sheet")!=null)throw new OpenAiResponses.Failure("AI_SCOPE_INVALID","AI가 일부 표본으로 전체 표를 교체하려 했습니다. 원본은 유지했습니다. 변경 작업으로 다시 요청하세요.");
+            if(result.proposal().get("operations") instanceof List<?> ops&&!ops.isEmpty()){
+                if(!context.rowScope.isEmpty())throw new OpenAiResponses.Failure("AI_SCOPE_INVALID","범위 편집 대신 전체 변경 작업이 제안되었습니다. 전체 변경 작업 모드에서 다시 요청하세요.");
+                @SuppressWarnings("unchecked") var operationBook=(Map<String,Object>)sheets.get(s,context.draftId).get("workbook");
+                storedResult.put("operationsPreview",com.axplatform.sheet.AiSheetOperations.apply(operationBook,context.targetSheetId,ops).preview());
+            }
             access.business(
                     s,
                     business,
@@ -818,12 +948,7 @@ public final class AiService {
                                 "UPDATE ap_ai_run SET status='READY',phase='사용자 검토"
                                     + " 대기',result_json=?,input_tokens=?,output_tokens=?,updated_at=?"
                                     + " WHERE id=? AND status='RUNNING' AND worker_owner=?",
-                                json.write(
-                                        Map.of(
-                                                "proposal",
-                                                result.proposal(),
-                                                "toolNames",
-                                                result.tools())),
+                                json.write(storedResult),
                                 result.inputTokens(),
                                 result.outputTokens(),
                                 now(),
@@ -840,7 +965,7 @@ public final class AiService {
         } catch (OpenAiResponses.Failure stopped) {
             fail(id, stopped.code(), stopped.getMessage(), stopped.diagnostic());
         } catch (Problem denied) {
-            if (Set.of("STORAGE_MISSING", "STORAGE_INTEGRITY", "STORAGE_REFERENCE").contains(denied.code())) {
+            if (Set.of("STORAGE_MISSING", "STORAGE_INTEGRITY", "STORAGE_REFERENCE","AI_SOURCE_CHANGED","AI_ASSET_CHANGED","AI_TOKEN_BUDGET","AI_COST_BUDGET","AI_PRICE_REQUIRED","AI_PAUSED").contains(denied.code())) {
                 fail(id, denied.code(), denied.getMessage());
                 return;
             }

@@ -1,16 +1,16 @@
-import {decorateIcons} from './app-shell.js?v=0.9.1';
+import {decorateIcons} from './app-shell.js?v=0.10.1';
 import {
   request
 }
-from './request.js?v=0.9.1';
+from './request.js?v=0.10.1';
 import {
   el,button,message,busy,whenText,bool
 }
-from './ui.js?v=0.9.1';
+from './ui.js?v=0.10.1';
 import {
   watch
 }
-from './events.js?v=0.9.1';
+from './events.js?v=0.10.1';
 const root=document.getElementById('dashboard-root'),workspace=Number(root.dataset.workspaceId),status=document.getElementById('dashboard-status'),selection=document.getElementById('business-select');
 const workflows= {
   EXCEL:['엑셀 · 데이터','표 만들기부터 계산·데이터 분석까지'],WORD:['워드','작성할 문서의 목적과 구성'],HWP:['한글','보고서·공문 작성의 요구사항'],PPT:['프레젠테이션','발표 목적과 청중·자료'],CRM:['고객관리','고객·영업 관리의 요구사항'],CALENDAR:['일정','시간·업무 일정의 요구사항'],APP:['앱 제작','만들고 싶은 앱의 요구사항']
@@ -183,7 +183,9 @@ function connect() {
 }
 function schedule() {
   clearTimeout(refreshTimer);
-  refreshTimer=setTimeout(()=>refresh({label:'최신 업무 현황을 확인하고 있습니다…',blocking:false}).catch(e=>message(status,e.message,true)),300);
+  // Live events and the periodic permission check update this screen silently.
+  // Manual navigation/refresh still uses the normal foreground loading state.
+  refreshTimer=setTimeout(()=>refresh(false).catch(e=>message(status,e.message,true)),300);
 }
 
 function saveNavigation(){const q=new URLSearchParams();q.set('businessId',selection.value);if(filter.value!=='ALL')q.set('workflow',filter.value);if(search.value)q.set('q',search.value);q.set('sort',sort.value);history.replaceState({},'',location.pathname+'?'+q);document.querySelectorAll('.sidebar [data-workflow]').forEach(a=>{if(a.dataset.workflow===filter.value)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});}

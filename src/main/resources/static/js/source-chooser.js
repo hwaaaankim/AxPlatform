@@ -1,6 +1,6 @@
-import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
-import {request} from './request.js?v=0.9.1';
-import {el,button,message} from './ui.js?v=0.9.1';
+import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.10.1';
+import {request} from './request.js?v=0.10.1';
+import {el,button,message} from './ui.js?v=0.10.1';
 export const scopeLabel={COMMON:'사업 공통',WORKFLOW:'업무별 공통',PROJECT:'작업 전용'};
 export function chooseSource({business,project,workflow,kind='ALL',onChoose,multiple=true}){
  const dialog=el('dialog','','source-dialog'),search=el('input'),list=el('div','','source-results'),notice=el('p','','help-line'),pager=el('div','','actions');search.type='search';search.placeholder='파일 이름 검색';search.setAttribute('aria-label','내 자료 검색');notice.setAttribute('role','status');let page=1,selected=new Map(),saving=false,sequence=0,timer;

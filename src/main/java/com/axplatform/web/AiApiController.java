@@ -51,7 +51,7 @@ public final class AiApiController {
             @PathVariable String id,
             @RequestBody Map<String, Object> command,
             HttpServletRequest request) {
-        return ai.cancel(Subjects.current(), request.getSession(false), id);
+        return ai.cancel(Subjects.current(), request.getSession(false), id,Boolean.TRUE.equals(command.get("abandonContinuation")));
     }
 
     @PostMapping("/api/ai-runs/{id}/apply-sheets")

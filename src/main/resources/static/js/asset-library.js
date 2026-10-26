@@ -1,7 +1,7 @@
-import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
-import {request} from './request.js?v=0.9.1';
-import {el,button,message} from './ui.js?v=0.9.1';
-import {fileSize} from './file-picker.js?v=0.9.1';
+import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.10.1';
+import {request} from './request.js?v=0.10.1';
+import {el,button,message} from './ui.js?v=0.10.1';
+import {fileSize} from './file-picker.js?v=0.10.1';
 
 // Saved assets use the existing, reversible archive API. Selection removal in
 // an upload picker is intentionally a separate operation.

@@ -1,5 +1,5 @@
-import {request} from './request.js?v=0.9.1';
-import {el,button,message,whenText} from './ui.js?v=0.9.1';
+import {request} from './request.js?v=0.10.1';
+import {el,button,message,whenText} from './ui.js?v=0.10.1';
 const $=id=>document.getElementById(id),status=$('operations-status');let settings={},pending=false;
 const num=n=>Number(n||0).toLocaleString('ko-KR'),money=n=>n===null||n===undefined?'단가·비용 미확인':'$'+Number(n).toFixed(6);
 const names={'DASHBOARD_VIEW':'업무 홈 방문','WORK_START_VIEW':'새 작업 화면','WORK_OPEN':'기존 작업 열기','FILES_VIEW':'내 자료 방문','FILE_DOWNLOAD':'다운로드','SHEET_IMPORT_PREVIEW':'엑셀 가져오기 미리보기','draft.created':'작업 생성','draft.updated':'초안 저장','draft.saved':'내용 확정 저장','sheet.updated':'표 저장','asset.replaced':'자료 원본 교체','asset.uploaded':'자료 등록','asset.archived':'휴지통 이동','asset.purged':'영구 삭제','ai.ready':'AI 제안 생성','ai.applied':'AI 제안 적용','ai.failed':'AI 처리 실패'};

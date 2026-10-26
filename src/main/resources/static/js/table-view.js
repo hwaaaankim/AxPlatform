@@ -1,5 +1,5 @@
-import {withLoading} from './loading.js?v=0.9.1';
-import {el,button} from './ui.js?v=0.9.1';
+import {withLoading} from './loading.js?v=0.10.1';
+import {el,button} from './ui.js?v=0.10.1';
 export const PAGE_SIZE=100;
 export function letter(index){let s='';for(let n=index+1;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;}
 export function cellText(value,column){

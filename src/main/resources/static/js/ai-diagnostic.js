@@ -1,4 +1,4 @@
-import {el} from './ui.js?v=0.9.1';
+import {el} from './ui.js?v=0.10.1';
 
 export function diagnosticDetails(info={},errorCode=''){
   const details=el('details','','ai-diagnostic'),list=el('dl','','diagnostic-grid');

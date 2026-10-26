@@ -1,17 +1,17 @@
-import {withLoading} from './loading.js?v=0.9.1';
-import {formulaReview} from './formula-review.js?v=0.9.1';
-import {PAGE_SIZE,letter,cellText,cellStyle,orderedRows,pagedPreview,projectColumns,projectRows} from './table-view.js?v=0.9.1';
-import {asWorkbook,emptyTable,workbookControls,sheetName,uniqueSheetName} from './workbook-controls.js?v=0.9.1';
-import {enhanceDateInput} from './date-picker.js?v=0.9.1';
+import {withLoading} from './loading.js?v=0.10.1';
+import {formulaReview} from './formula-review.js?v=0.10.1';
+import {PAGE_SIZE,letter,cellText,cellStyle,orderedRows,pagedPreview,projectColumns,projectRows} from './table-view.js?v=0.10.1';
+import {asWorkbook,emptyTable,workbookControls,sheetName,uniqueSheetName} from './workbook-controls.js?v=0.10.1';
+import {enhanceDateInput} from './date-picker.js?v=0.10.1';
 import {
   request
-} from './request.js?v=0.9.1';
+} from './request.js?v=0.10.1';
 import {
   el,button,message
-} from './ui.js?v=0.9.1';
+} from './ui.js?v=0.10.1';
 import {
   editState
-} from './edit-state.js?v=0.9.1';
+} from './edit-state.js?v=0.10.1';
 const copy=value=>JSON.parse(JSON.stringify(value));
 export function reorderColumns(sheet,ids) {
   if(ids.length!==sheet.columns.length||new Set(ids).size!==ids.length||ids.some(id=>!sheet.columns.some(c=>c.id===id)))throw new Error('열 구성이 서로 다릅니다.');
@@ -65,15 +65,7 @@ export function createSheetEditor(host,context) {
     mark();
     render();
     details.open=true;
-  }),addRow=button('행 추가',()=>{
-    if(!working.columns.length)return message(notice,'먼저 열을 하나 추가하세요.',true);
-    if(working.rows.length>=50000||(working.rows.length+1)*working.columns.length>1000000)return message(notice,'최대 50,000행·시트당 100만 셀입니다.',true);
-    working.rows.push(working.columns.map(()=>''));
-    working.rowIds.push(crypto.randomUUID());
-    working.view={};page=Math.floor((working.rows.length-1)/PAGE_SIZE);
-    mark();
-    renderGrid();
-  }),deleteRows=button('선택한 행 삭제',()=>{
+  }),addRow=button('행 추가',()=>appendRows([working.columns.map(()=>'')]).catch(fail)),deleteRows=button('선택한 행 삭제',()=>{
     if(!selectedRows.size)return message(notice,'지울 행의 번호 옆 선택란을 선택하세요.',true);
     if(!confirm(`선택한 ${selectedRows.size}행을 표 초안에서 삭제할까요? 서버 적용 전까지 확정되지 않습니다.`))return;
     const kept=working.rows.map((_,i)=>i).filter(i=>!selectedRows.has(i));if(hasExcel()){changeStructure({rows:kept}).catch(fail);return;}working.presentation=projectRows(working,kept);
@@ -118,6 +110,45 @@ export function createSheetEditor(host,context) {
     }catch(e){calculationStatus.textContent='계산 확인 필요';throw e;}finally{calculationPromise=null;if(action!=='calculate'){pending=false;updateControls();}if(stamp!==revision&&!pending&&!accepted)scheduleCalculation();}})();calculationPromise=run;return run;
   }
   async function changeStructure(operation){if(pending)return;if(calculationPromise)await calculationPromise;clearTimeout(calcTimer);pending=true;revision++;updateControls();try{const next=await request('/api/sheets/workbook-structure?businessId='+context.business(),{method:'POST',body:{workbook:syncBook(),sheetId:book.activeSheetId,...operation}});restoreBook(next);selectedCell=null;mark(false);render();context.onSheetChange?.();}finally{pending=false;updateControls();}}
+
+  function computedColumns(extendFormulas=true){
+    const last=working.rows.length;
+    return new Set(working.columns.filter((c,i)=>c.formula||extendFormulas&&last>0&&working.excel?.formulas?.[letter(i)+(last+1)]).map(c=>c.id));
+  }
+  async function importRows({rows,mapping,mode='append',formulaPolicy='keep',extendFormulas=true,sourceAssetId}={}){
+    if(!editable('rows.create')||!editable('cells.update'))throw Error('데이터 추가·셀 편집 권한과 진행 중 작업을 확인하세요.');
+    if(mode==='replace'&&!editable('rows.delete'))throw Error('자료 교체에는 기존 행 삭제 권한이 필요합니다.');
+    if(calculationPromise)await calculationPromise;clearTimeout(calcTimer);
+    const original=syncBook(),target=original.sheets.find(s=>s.id===original.activeSheetId);
+    if(sourceAssetId&&!target.sourceAssetIds.includes(sourceAssetId)&&target.sourceAssetIds.length>=20)throw Error('시트 원본 연결은 최대 20개입니다. 새 시트로 가져오세요.');
+    pending=true;context.setBusy?.(true);updateControls();
+    try{
+      const next=await request('/api/sheets/workbook-rows?businessId='+context.business(),{method:'POST',body:{workbook:original,sheetId:book.activeSheetId,rows,mapping,mode,formulaPolicy,extendFormulas},loading:mode==='replace'?'교체 자료와 수식을 확인하고 있습니다…':'행을 추가하고 수식을 계산하고 있습니다…'});
+      const changed=next.sheets.find(s=>s.id===next.activeSheetId);if(sourceAssetId&&!changed.sourceAssetIds.includes(sourceAssetId))changed.sourceAssetIds.push(sourceAssetId);
+      restoreBook(next);page=Math.max(0,Math.floor((working.rows.length-1)/PAGE_SIZE));mark(false);render();context.onSheetChange?.();
+      message(notice,`${rows.length.toLocaleString()}행 ${mode==='replace'?'교체':'추가'} · 수식을 계산했습니다. 전체 시트 저장으로 확정하세요.`);
+      return next;
+    }finally{pending=false;context.setBusy?.(false);updateControls();}
+  }
+  async function appendRows(rows,{extendFormulas=true}={}){
+    if(!working.columns.length)throw Error('먼저 열을 하나 추가하세요.');
+    return importRows({rows,mapping:working.columns.map(c=>c.id),mode:'append',formulaPolicy:'keep',extendFormulas});
+  }
+  function openAddRows({sheetId=book.activeSheetId,onSaved,saveImmediately=true}={}){
+    if(!editable('rows.create')||!editable('cells.update'))throw Error('데이터 추가·셀 편집 권한과 진행 중 작업을 확인하세요.');
+    if(sheetId!==book.activeSheetId)selectSheet(sheetId);
+    if(!working.columns.length)throw Error('먼저 열을 하나 추가하세요.');
+    const d=el('dialog','','workbook-dialog'),heading=el('h2','데이터 추가'),form=el('form'),fields=el('div','','field-grid'),info=el('p','','help-line'),actions=el('div','','actions'),extendLabel=el('label','','check'),extend=el('input');
+    const target=book.activeSheetId,stamp=revision,values=new Map(),computed=computedColumns();let submitted=false;
+    d.style.maxWidth='min(760px, calc(100vw - 32px))';d.style.maxHeight='85vh';d.style.overflow='auto';heading.id='sheet-add-row-title';d.setAttribute('aria-labelledby',heading.id);info.setAttribute('role','status');
+    extend.type='checkbox';extend.checked=true;extendLabel.append(extend,el('span','마지막 데이터 행의 Excel 수식을 새 행에 이어 적용'));extendLabel.hidden=!Object.keys(working.excel?.formulas||{}).some(a=>Number(a.match(/\d+/)?.[0])===working.rows.length+1);
+    for(const column of working.columns){const wrap=el('div','','field'),label=el('label',column.label),input=el('input');input.id='new-row-'+column.id;input.maxLength=2000;input.setAttribute('aria-label',column.label);label.htmlFor=input.id;input.type=column.type==='DATE'?'date':'text';if(column.type==='NUMBER')input.inputMode='decimal';input.readOnly=computed.has(column.id);input.placeholder=input.readOnly?'수식으로 자동 계산':column.type==='NUMBER'?'숫자 입력':column.type==='DATE'?'YYYY-MM-DD':'값 입력';wrap.append(label,input);if(input.readOnly)wrap.append(el('small','추가한 입력값으로 자동 계산합니다.','muted'));fields.append(wrap);values.set(column.id,input);}
+    extend.addEventListener('change',()=>{const computed=computedColumns(extend.checked);working.columns.forEach(c=>{const input=values.get(c.id);input.readOnly=computed.has(c.id);input.placeholder=input.readOnly?'수식으로 자동 계산':'값 입력';});});
+    const submit=el('button',saveImmediately?'추가하고 저장':'편집 초안에 추가','button primary');submit.type='submit';const cancel=button('취소',()=>d.close(),'button');actions.append(cancel,submit);
+    form.append(el('p','계산 열은 자동으로 채웁니다. 추가한 데이터는 검색·정렬·그래프에 함께 반영됩니다.','muted'),fields,extendLabel,el('small','마지막 행이 합계·소계라면 수식 이어 적용을 해제한 뒤 표에서 수식을 확인하세요.','muted'),info,actions);
+    form.addEventListener('submit',async e=>{e.preventDefault();if(submitted)return;try{if(stamp!==revision||target!==book.activeSheetId)throw Error('입력창을 연 뒤 시트가 바뀌었습니다. 입력값을 복사한 후 창을 다시 열어 주세요.');submitted=true;submit.disabled=true;cancel.disabled=true;const computed=computedColumns(extend.checked),row=working.columns.map(c=>computed.has(c.id)?'':values.get(c.id).value);await appendRows([row],{extendFormulas:extend.checked});if(saveImmediately)await save();await onSaved?.();d.close();}catch(error){message(info,error.message,true);if(revision!==stamp){submit.disabled=true;submit.textContent='표에서 저장 상태를 확인하세요';cancel.disabled=false;cancel.textContent='닫기';return;}}finally{if(revision===stamp){submitted=false;submit.disabled=false;cancel.disabled=false;}}});
+    d.append(heading,form);d.addEventListener('close',()=>d.remove(),{once:true});document.body.append(d);d.showModal();fields.querySelector('input:not([readonly])')?.focus();return d;
+  }
 
   function has(action){
     return context.caps().has('workspace.sheet.'+action);
@@ -273,7 +304,7 @@ export function createSheetEditor(host,context) {
     if(!dirty)message(notice,`${state.version<0?'표 미저장':'표 버전 '+state.version} · ${working.columns.length}열 / ${working.rows.length}행`);
   }
   async function load({
-    force=false
+    force=false,loading=true
   }
   ={
   }){
@@ -310,7 +341,7 @@ export function createSheetEditor(host,context) {
       message(notice,'서버에 새 내용이 있을 수 있습니다. 현재 표 입력을 유지했습니다. 서버 재조회는 상단 ‘최신 내용 불러오기’를 사용하세요.');
       return;
     }
-    state=await request(`/api/drafts/${encodeURIComponent(id)}/sheet`);
+    state=await request(`/api/drafts/${encodeURIComponent(id)}/sheet`,{loading});
     restoreBook(state.workbook||state.sheet);
     selectedRows.clear();
     selectedColumn=working.columns[0]?.id||null;
@@ -330,7 +361,7 @@ export function createSheetEditor(host,context) {
         message(notice,'브라우저 표 입력과 서버 버전이 달라 자동 복구하지 않았습니다.',true);
       }
     }
-    render();scheduleCalculation();
+    render();if(loading)scheduleCalculation();
     context.onLocalChange?.();
   }
   function save(){return withLoading('전체 시트와 수식을 저장하고 있습니다…',saveWork);}
@@ -431,7 +462,7 @@ export function createSheetEditor(host,context) {
   });
   bookControls.render();
   return {
-    load,save,addSheets,selectSheet,goTo,recalculate,activeSheetId:()=>book.activeSheetId,workbook:()=>copy(syncBook()),hasColumns:()=>syncBook().sheets.some(s=>s.data.columns.length),download:downloadFile,replaceWorking(next,{sourceAssetId}={}){
+    load,save,addSheets,selectSheet,goTo,recalculate,appendRows,importRows,openAddRows,activeSheetId:()=>book.activeSheetId,workbook:()=>copy(syncBook()),hasColumns:()=>syncBook().sheets.some(s=>s.data.columns.length),download:downloadFile,replaceWorking(next,{sourceAssetId}={}){
       if(!editable('schema.update')||!editable('cells.update')||!editable('rows.create'))throw new Error('열·셀 수정과 행 추가 권한을 확인하세요.');
       const nextIds=new Set(next.rowIds);if(working.rowIds.some(id=>!nextIds.has(id))&&!editable('rows.delete'))throw new Error('기존 행을 바꾸려면 행 삭제 권한이 필요합니다.');
       const target=book.sheets.find(s=>s.id===book.activeSheetId);if(sourceAssetId&&!target.sourceAssetIds.includes(sourceAssetId)){if(target.sourceAssetIds.length>=20)throw Error('시트 원본 연결은 최대 20개입니다. 새 시트로 가져오세요.');target.sourceAssetIds.push(sourceAssetId);}

@@ -202,10 +202,12 @@ public final class OpenAiResponses {
                 outputTokens += token(usage.get("output_tokens"));
             }
             if (!"completed".equals(response.get("status")))
-                throw failure(
-                        "AI_INCOMPLETE", "모델이 응답을 끝내지 못했습니다. 입력을 줄이거나 필요한 범위를 나누어 새로 요청해 주세요.");
-            if (!(response.get("output") instanceof List<?> output) || output.size() > 40)
+                throw incomplete(response).withAttempts(generationRequests);
+            if (!(response.get("output") instanceof List<?> output))
                 throw failure("AI_RESPONSE_FORMAT", "모델 응답 형식을 확인하지 못했습니다.");
+            if (output.size() > 40)
+                throw failure("AI_RESPONSE_LIMIT", "응답 항목이 한 번에 처리할 수 있는 양을 넘었습니다. 이번 구간은 반영하지 않았습니다. 처리 범위를 줄여 같은 구간을 다시 요청해 주세요.")
+                        .withAttempts(generationRequests);
             // Preserve every output item, including encrypted reasoning, in stateless multi-turn
             // input.
             input.addAll(output);
@@ -220,9 +222,11 @@ public final class OpenAiResponses {
                     throw failure("AI_TOOL_DENIED", "허용하지 않은 도구 요청을 중단했습니다.");
                 if (!(raw.get("call_id") instanceof String callId)
                         || callId.length() > 200
-                        || !(raw.get("arguments") instanceof String arguments)
-                        || arguments.length() > 1_000_000)
+                        || !(raw.get("arguments") instanceof String arguments))
                     throw failure("AI_RESPONSE_FORMAT", "도구 요청 형식이 올바르지 않습니다.");
+                if (arguments.length() > 1_000_000)
+                    throw failure("AI_RESPONSE_LIMIT", "제안 데이터가 한 번에 처리할 수 있는 양을 넘었습니다. 이번 구간은 반영하지 않았습니다. 행·셀 수를 줄여 같은 구간을 다시 요청해 주세요.")
+                            .withAttempts(generationRequests);
                 Map<String, Object> args;
                 try {
                     args = json.object(arguments);
@@ -246,7 +250,7 @@ public final class OpenAiResponses {
                     } catch (IllegalArgumentException invalid) {
                         throw failure(
                                 "AI_PROPOSAL_INVALID",
-                                "모델 제안이 항목·표 검증을 통과하지 못했습니다. 범위를 줄여 새로 요청해 주세요.");
+                                "모델 제안이 항목·표 검증을 통과하지 못해 이번 구간은 반영하지 않았습니다. 요청 내용을 확인하고 범위를 줄여 같은 구간을 다시 요청해 주세요.");
                     }
                     used.add(name);
                     context.checkpoint();
@@ -257,7 +261,8 @@ public final class OpenAiResponses {
                 Object actual = context.read(name);
                 String result = json.write(actual);
                 if (result.length() > 900_000)
-                    throw failure("AI_CONTEXT_LIMIT", "현재 자료가 도구 입력 한도를 넘습니다. 자료를 나누어 주세요.");
+                    throw failure("AI_CONTEXT_LIMIT", "현재 구간이 도구 입력 한도를 넘었습니다. 한 번에 읽을 행·셀 수를 줄여 같은 구간부터 다시 요청해 주세요.")
+                            .withAttempts(generationRequests);
                 used.add(name);
                 input.add(
                         Map.of(
@@ -270,14 +275,16 @@ public final class OpenAiResponses {
             }
             if (calls == 0) throw failure("AI_PROPOSAL_MISSING", "검토 제안 도구 결과가 없습니다. 새로 요청해 주세요.");
             if (json.write(input).length() > 12_000_000)
-                throw failure("AI_CONTEXT_LIMIT", "도구 대화가 너무 커졌습니다. 자료와 질문을 나누어 주세요.");
+                throw failure("AI_CONTEXT_LIMIT", "현재 구간의 도구 대화가 입력 한도를 넘었습니다. 한 번에 읽을 행·셀 수와 요청 내용을 줄여 같은 구간부터 다시 요청해 주세요.")
+                        .withAttempts(generationRequests);
         }
-        throw failure("AI_ROUND_LIMIT", "정해진 도구 호출 횟수 안에 제안을 만들지 못했습니다. 더 작은 범위로 새로 요청해 주세요.");
+        throw failure("AI_ROUND_LIMIT", "정해진 도구 호출 횟수 안에 제안을 완성하지 못해 이번 구간은 반영하지 않았습니다. 처리 범위를 줄이거나 요청을 나누어 같은 구간부터 다시 요청해 주세요.")
+                .withAttempts(generationRequests);
     }
 
     private Map<String, Object> call(Map<String, Object> payload, Instant deadline, String suffix) {
         long remaining = Duration.between(Instant.now(), deadline).toMillis();
-        if (remaining <= 0) throw failure("AI_JOB_TIMEOUT", "AI 작업 제한 시간이 지났습니다.");
+        if (remaining <= 0) throw failure("AI_JOB_TIMEOUT", "AI 작업 제한 시간이 지나 다음 호출을 중단했습니다. 완료된 구간을 확인한 뒤 남은 구간을 직접 이어서 요청해 주세요.");
         long timeout = Math.min(remaining, settings.requestSeconds() * 1000L);
         CompletableFuture<HttpResponse<byte[]>> future = null;
         try {
@@ -304,14 +311,24 @@ public final class OpenAiResponses {
             }
         } catch (TimeoutException timeoutError) {
             if (future != null) future.cancel(true);
-            throw failure("AI_PROVIDER_TIMEOUT", "OpenAI 응답 제한 시간이 지났습니다. 자동 재시도하지 않았습니다.");
+            throw failure("AI_PROVIDER_TIMEOUT", "OpenAI 응답 제한 시간이 지났습니다. 이번 구간의 완료 여부와 사용량을 확인한 뒤 직접 다시 요청해 주세요. 자동 재시도하지 않았습니다.");
         } catch (InterruptedException interrupted) {
             if (future != null) future.cancel(true);
             Thread.currentThread().interrupt();
             throw failure("AI_INTERRUPTED", "AI 작업이 중단되었습니다.");
         } catch (ExecutionException network) {
             if (future != null) future.cancel(true);
-            throw failure("AI_NETWORK", "OpenAI 연결을 완료하지 못했습니다. 자동 재시도하지 않았습니다.");
+            // The HTTP client wraps subscriber failures and timeouts in a future failure.
+            // A bounded response must remain distinguishable from an unknown network failure.
+            Throwable cause = network.getCause();
+            for (int depth = 0; cause != null && depth < 16; depth++, cause = cause.getCause()) {
+                if (cause instanceof ResponseLimitException)
+                    throw failure("AI_RESPONSE_LIMIT", "응답이 전송 크기 한도를 넘어서 이번 구간은 반영하지 않았습니다. 처리할 행·셀 수를 줄여 같은 구간을 직접 다시 요청해 주세요.");
+                if (cause instanceof HttpTimeoutException)
+                    throw failure("AI_PROVIDER_TIMEOUT", "OpenAI 응답 제한 시간이 지났습니다. 이번 구간의 완료 여부와 사용량을 확인한 뒤 직접 다시 요청해 주세요. 자동 재시도하지 않았습니다.");
+                if (cause == cause.getCause()) break;
+            }
+            throw failure("AI_NETWORK", "OpenAI 연결을 완료하지 못했습니다. 이번 구간의 완료 여부와 사용량을 확인한 뒤 직접 다시 요청해 주세요. 자동 재시도하지 않았습니다.");
         } catch (IllegalArgumentException invalid) {
             throw failure("AI_CONFIGURATION", "OpenAI 모델·인증 설정을 확인해 주세요.");
         }
@@ -358,6 +375,23 @@ public final class OpenAiResponses {
         }
     }
 
+    private static Failure incomplete(Map<String, Object> response) {
+        Object reason = response.get("incomplete_details") instanceof Map<?, ?> details
+                ? details.get("reason") : null;
+        if ("incomplete".equals(response.get("status")) && "max_output_tokens".equals(reason))
+            return new Failure("AI_OUTPUT_LIMIT", "출력 토큰 한도에 도달해 이번 구간의 응답이 잘렸습니다. 불완전한 제안은 반영하지 않았습니다. 한 번에 생성할 행·셀 수를 줄여 같은 구간을 다시 요청해 주세요.",
+                    Map.of("incompleteReason", "max_output_tokens"));
+        if ("incomplete".equals(response.get("status")) && "content_filter".equals(reason))
+            return new Failure("AI_PROVIDER_POLICY", "OpenAI 정책에 따라 응답이 중단되어 이번 구간은 반영하지 않았습니다. 요청 내용을 확인해 주세요. 자동 재시도하지 않았습니다.",
+                    Map.of("incompleteReason", "content_filter"));
+        // Do not expose provider free text or treat other failures as a size limit.
+        return failure("AI_INCOMPLETE", "모델이 응답을 끝내지 못해 이번 구간은 반영하지 않았습니다. 완료된 구간을 확인한 뒤 같은 구간을 직접 다시 요청해 주세요. 자동 재시도하지 않았습니다.");
+    }
+
+    private static final class ResponseLimitException extends IOException {
+        ResponseLimitException() { super("bounded response"); }
+    }
+
     private static long token(Object value) {
         return value instanceof Number n ? Math.max(0, n.longValue()) : 0;
     }
@@ -389,7 +423,7 @@ public final class OpenAiResponses {
             for (ByteBuffer chunk : chunks) {
                 if ((long) output.size() + chunk.remaining() > limit) {
                     subscription.cancel();
-                    body.completeExceptionally(new IOException("bounded response"));
+                    body.completeExceptionally(new ResponseLimitException());
                     return;
                 }
                 byte[] bytes = new byte[chunk.remaining()];

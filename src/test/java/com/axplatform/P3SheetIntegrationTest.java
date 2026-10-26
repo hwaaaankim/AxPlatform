@@ -323,6 +323,37 @@ class P3SheetIntegrationTest {
         assertThat(ai.apply(owner.principal(),session,run,command,key).get("status")).isEqualTo("APPLIED");assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("5");assertThat(ai.apply(owner.principal(),session,run,command,key).get("status")).isEqualTo("APPLIED");
     }
 
+    @Test void aiOperationsApplyChecksCsrfOwnershipPermissionAndIdempotency() throws Exception {
+        ordinarySheetPermissions();grant("workspace.ai.read","workspace.ai.apply");Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("1","r1"),-1,0);
+        var proposed=proposal(null);proposed.put("operations",List.of(Map.of("kind","SET_CELL","range","A2","value","=SUM(2,3)","label","","columnId","","type","","formula","")));var session=session(owner.principal());String run=readyRun(owner,id,1,0,proposed,session),key=UUID.randomUUID().toString();var command=new AiService.Apply(key,1,0,List.of("operations"),proposed,true);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/ai-runs/"+run+"/apply").session(session).header("Idempotency-Key",key).contentType("application/json").content(json.write(command))).andExpect(status().isForbidden());
+        assertThatThrownBy(()->ai.apply(customer().principal(),session,run,command,key)).isInstanceOf(Problem.class);
+        assertThatThrownBy(()->ai.apply(owner.principal(),session,run,command,key)).isInstanceOf(Problem.class);assertThat(drafts.get(owner.principal(),id).get("version")).isEqualTo(1L);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("1");
+        grant("workspace.sheet.formula.update");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/ai-runs/"+run+"/apply").session(session).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("Idempotency-Key",key).contentType("application/json").content(json.write(command))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("APPLIED"));
+        assertThat(ai.apply(owner.principal(),session,run,command,key).get("status")).isEqualTo("APPLIED");assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("5");assertThat(sheets.get(owner.principal(),id).get("version")).isEqualTo(1L);
+    }
+    @Test void aiAppendRowsHttpApplyPreservesIdentitiesExtendsFormulasAndIsIdempotent() throws Exception {
+        ordinarySheetPermissions();grant("workspace.ai.read","workspace.ai.apply","workspace.sheet.formula.update");Owner owner=customer();String id=draft(owner,"EXCEL");
+        var original=Map.<String,Object>of("columns",List.of(Map.of("id","code","label","수량","type","NUMBER","width",160),Map.of("id","total","label","계산","type","NUMBER","width",160)),"rows",List.of(List.of("3","6")),"rowIds",List.of("keep"),"excel",Map.of("formulas",Map.of("B2","$A2*2")));sheets.put(owner.principal(),id,original,-1,0);
+        var proposed=proposal(null);proposed.put("operations",List.of(Map.of("kind","APPEND_ROWS","range","","value","","label","","columnId","","type","","formula","","rows",List.of(List.of("4",""),List.of("5","")))));var session=session(owner.principal());String run=readyRun(owner,id,1,0,proposed,session),key=UUID.randomUUID().toString();var command=new AiService.Apply(key,1,0,List.of("operations"),proposed,true);
+        db.update("DELETE FROM ap_policy_grant WHERE action_code='workspace.sheet.rows.create'");assertThatThrownBy(()->ai.apply(owner.principal(),session,run,command,key)).isInstanceOf(Problem.class);assertThat(((List<?>)WorkbookRules.data(storedBook(owner,id),null).get("rows"))).hasSize(1);assertThat(drafts.get(owner.principal(),id).get("version")).isEqualTo(1L);grant("workspace.sheet.rows.create");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/ai-runs/"+run+"/apply").session(session).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("Idempotency-Key",key).contentType("application/json").content(json.write(command))).andExpect(status().isOk()).andExpect(jsonPath("$.operationsPreview[0].affectedRows").value(2));
+        var after=WorkbookRules.data(storedBook(owner,id),null);var ids=(List<String>)after.get("rowIds");assertThat(ids).startsWith("keep").hasSize(3);assertThat(ExcelCells.value(after,"B4")).isEqualTo("10");assertThat(ExcelCells.map(ExcelCells.meta(after),"formulas")).containsEntry("B4","$A4*2");
+        ai.apply(owner.principal(),session,run,command,key);assertThat(WorkbookRules.data(storedBook(owner,id),null).get("rowIds")).isEqualTo(ids);assertThat(sheets.get(owner.principal(),id).get("version")).isEqualTo(1L);
+    }
+    @Test void aiPauseOperationPersistsOriginalFormulaForExistingRestoreAction() {
+        ordinarySheetPermissions();grant("workspace.ai.read","workspace.ai.apply","workspace.sheet.formula.update");Owner owner=customer();String id=draft(owner,"EXCEL");var original=new LinkedHashMap<>(table("","keep"));original.put("excel",Map.of("formulas",Map.of("A2","#REF!*2")));sheets.put(owner.principal(),id,original,-1,0);
+        var proposed=proposal(null);proposed.put("operations",List.of(Map.of("kind","PAUSE_ERRORS","range","A2","value","","label","","columnId","","type","","formula","#REF!","rows",List.of())));var session=session(owner.principal());String run=readyRun(owner,id,1,0,proposed,session),key=UUID.randomUUID().toString();ai.apply(owner.principal(),session,run,new AiService.Apply(key,1,0,List.of("operations"),proposed,true),key);
+        var after=WorkbookRules.data(storedBook(owner,id),null);assertThat(ExcelCells.value(after,"A2")).isEmpty();assertThat(ExcelCells.<Map<String,Object>>map(ExcelCells.meta(after),"paused").get("A2")).containsEntry("formula","#REF!*2");var restored=WorkbookCalculation.repair(storedBook(owner,id),"restore");sheets.putWorkbook(owner.principal(),id,restored,1,2);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("#REF!");
+    }
+    @Test void sampleOnlyAiRunRejectsFullReplacementAndStaleOperations(){
+        ordinarySheetPermissions();grant("workspace.ai.read","workspace.ai.apply");Owner owner=customer();String id=draft(owner,"EXCEL");sheets.put(owner.principal(),id,table("KEEP","r1"),-1,0);var session=session(owner.principal());var proposed=proposal(table("WRONG","r1"));String run=readyRun(owner,id,1,0,proposed,session),key=UUID.randomUUID().toString();
+        var req=json.object(db.queryForObject("SELECT request_json FROM ap_ai_run WHERE id=?",String.class,run));req.put("operationsOnly",true);db.update("UPDATE ap_ai_run SET request_json=? WHERE id=?",json.write(req),run);
+        assertThatThrownBy(()->ai.apply(owner.principal(),session,run,new AiService.Apply(key,1,0,List.of("sheet"),proposed,true),key)).isInstanceOf(Problem.class);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("KEEP");
+        var operation=proposal(null);operation.put("operations",List.of(Map.of("kind","CLEAR_RANGE","range","A2","value","","label","","columnId","","type","","formula","")));String second=readyRun(owner,id,1,0,operation,session);sheets.put(owner.principal(),id,table("NEWER","r1"),0,1);String newKey=UUID.randomUUID().toString();assertThatThrownBy(()->ai.apply(owner.principal(),session,second,new AiService.Apply(newKey,1,0,List.of("operations"),operation,true),newKey)).isInstanceOf(Problem.class);assertThat(ExcelCells.value(WorkbookRules.data(storedBook(owner,id),null),"A2")).isEqualTo("NEWER");
+    }
+
     private Map<String,Object> workbook(String a,String b){return WorkbookRules.normalize(Map.of("format","AX_WORKBOOK_1","activeSheetId","sheet1","sheets",List.of(
         Map.of("id","sheet1","name","매출","data",table(a,"r1"),"sourceAssetIds",List.of()),
         Map.of("id","inventory","name","재고","data",table(b,"r2"),"sourceAssetIds",List.of()))));}
@@ -425,6 +456,189 @@ class P3SheetIntegrationTest {
         ordinarySheetPermissions();grant("workspace.sheet.export");Owner owner=customer();String id=draft(owner,"EXCEL");var data=new LinkedHashMap<>(table("3","r1"));var rows=new ArrayList<List<String>>();var ids=new ArrayList<String>();for(int i=0;i<240;i++){rows.add(List.of(i==0?"=SUM(1,1)":"ROW"+i));ids.add("r"+i);}data.put("rows",rows);data.put("rowIds",ids);sheets.put(owner.principal(),id,data,-1,0);
         assertThat((List<?>)dataCenter.data(owner.principal(),id,dataView(),1,false).get("rows")).hasSize(100);var exported=dataCenter.export(owner.principal(),id,dataView(),"csv",0);String csv=new String(exported.data(),java.nio.charset.StandardCharsets.UTF_8);assertThat(csv).contains("'=SUM(1,1)","ROW239");assertThat(csv.lines().count()).isEqualTo(241);
         var xlsx=dataCenter.export(owner.principal(),id,dataView(),"xlsx",0);assertThat((List<?>)SheetImport.read(xlsx.data(),xlsx.filename(),"UTF-8","").get("rows")).hasSize(240);assertThatThrownBy(()->dataCenter.export(owner.principal(),id,dataView(),"csv",9)).isInstanceOf(Problem.class);assertThatThrownBy(()->dataCenter.export(customer().principal(),id,dataView(),"csv",0)).isInstanceOf(Problem.class);
+    }
+
+    @SuppressWarnings("unchecked") private List<List<String>> continuationRows(Map<String,Object> data) { return (List<List<String>>)data.get("rows"); }
+    private com.axplatform.ai.AiSettings continuationSettings() {
+        return new com.axplatform.ai.AiSettings(new org.springframework.mock.env.MockEnvironment()
+                .withProperty("ax.integrations.openai.enabled", "true")
+                .withProperty("ax.integrations.openai.api-key", "TEST_ONLY_NOT_A_KEY")
+                .withProperty("ax.integrations.openai.model", "TEST_ONLY_MODEL")
+                .withProperty("ax.integrations.openai.max-output-tokens", "2000"));
+    }
+    private AiService continuationWorker(com.axplatform.ai.ContinuationHttpFixture fixture) {
+        var settings = continuationSettings();
+        return new AiService(db, access, drafts, sheets, assets, json, clock, settings, fixture.provider(settings, json), sessions, metering);
+    }
+    private AiService.Start continuationCommand(Owner owner, String draft, String key, String parent, Map<String,Object> plan) {
+        var snapshot = sheets.get(owner.principal(), draft);
+        var command = new LinkedHashMap<String,Object>();
+        command.put("prompt", "사용자가 요청한 전체 분량을 원본 보존하며 이어 처리하세요.");
+        command.put("assetIds", List.of()); command.put("requestKey", key);
+        command.put("draftVersion", snapshot.get("draftVersion")); command.put("sheetVersion", snapshot.get("version"));
+        command.put("targetSheetId", "sheet1"); command.put("photoSheetIds", List.of());
+        if (parent != null) command.put("continuationOf", parent);
+        if (plan != null) command.put("continuation", plan);
+        return tools.jackson.databind.json.JsonMapper.builder().build().readValue(json.write(command), AiService.Start.class);
+    }
+    private Map<String,Object> awaitContinuation(AiService worker, Owner owner, String runId) {
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(10))
+                .until(() -> !Set.of("QUEUED", "RUNNING").contains(worker.get(owner.principal(), runId).get("status")));
+        return worker.get(owner.principal(), runId);
+    }
+    @SuppressWarnings("unchecked") private Map<String,Object> continuationState(Map<String,Object> run) {
+        return (Map<String,Object>) run.get("continuation");
+    }
+    private Map<String,Object> appendContinuationProposal(int start, int count, boolean more) {
+        var p = proposal(null);
+        p.put("draft", Map.of("title", "원래 제목", "answers", Map.of("purpose", "", "data", "", "result", "", "details", "", "audience", "")));
+        var rows = java.util.stream.IntStream.range(start, start + count).mapToObj(i -> List.of("NEW_" + i)).toList();
+        p.put("operations", count == 0 ? List.of() : List.of(Map.of("kind", "APPEND_ROWS", "range", "", "value", "", "label", "", "columnId", "", "type", "", "formula", "", "rows", rows)));
+        p.put("continuation", Map.of("hasMore", more, "nextRow", start + count, "note", "이번 원본 범위 확인"));
+        return p;
+    }
+    private void applyContinuation(AiService worker, Owner owner, MockHttpSession session, String draft, String runId, String field) {
+        var snapshot = sheets.get(owner.principal(), draft); String key = UUID.randomUUID().toString();
+        worker.apply(owner.principal(), session, runId, new AiService.Apply(key,
+                ((Number)snapshot.get("draftVersion")).longValue(), ((Number)snapshot.get("version")).longValue(), List.of(field), null, true), key);
+    }
+    private void continuationPermissions() {
+        ordinarySheetPermissions(); grant("workspace.ai.read", "workspace.ai.run", "workspace.ai.apply", "workspace.ai.cancel", "workspace.sheet.formula.update");
+    }
+
+    @Test @SuppressWarnings("unchecked") void continuationGenerationResumesAfterOutputLimitAndNeverRepeatsAppliedRows() throws Exception {
+        continuationPermissions(); Owner owner = customer(); String id = draft(owner, "EXCEL"); var session = session(owner.principal());
+        sheets.put(owner.principal(), id, table("ORIGINAL", "original-row"), -1, 0);
+        var fixture = new com.axplatform.ai.ContinuationHttpFixture().add(appendContinuationProposal(1, 200, true));
+        var worker = continuationWorker(fixture); var resumedWorker = continuationWorker(fixture);
+        try {
+            String key = UUID.randomUUID().toString();
+            var start = continuationCommand(owner, id, key, null, Map.of("mode", "GENERATE", "targetRows", 450, "chunkRows", 200));
+            String first = (String)worker.start(owner.principal(), session, id, start, key).get("id");
+            var ready = awaitContinuation(worker, owner, first);
+            assertThat(ready.get("status")).as(ready.toString()).isEqualTo("READY");
+            assertThat(continuationState(ready)).containsEntry("processedRows", 0).containsEntry("nextAllowed", false);
+            String earlyKey = UUID.randomUUID().toString();
+            assertThatThrownBy(() -> worker.start(owner.principal(), session, id, continuationCommand(owner, id, earlyKey, first, null), earlyKey)).isInstanceOf(Problem.class);
+            String metadataKey = UUID.randomUUID().toString();
+            assertThatThrownBy(() -> worker.apply(owner.principal(), session, first, new AiService.Apply(metadataKey, 1, 0, List.of("title"), null, true), metadataKey)).isInstanceOf(Problem.class);
+            applyContinuation(worker, owner, session, id, first, "operations");
+            assertThat(continuationState(worker.get(owner.principal(), first))).containsEntry("processedRows", 200).containsEntry("nextAllowed", true);
+            assertThat(continuationRows(WorkbookRules.data(storedBook(owner, id), "sheet1"))).hasSize(201);
+            // A provider truncation happens before a proposal and never changes the saved source.
+            fixture.failNextIncomplete(); String failedKey = UUID.randomUUID().toString();
+            String failed = (String)worker.start(owner.principal(), session, id, continuationCommand(owner, id, failedKey, first, null), failedKey).get("id");
+            var failure = awaitContinuation(worker, owner, failed);
+            assertThat(failure.get("status")).as(failure.toString()).isEqualTo("FAILED");
+            assertThat(continuationState(failure)).containsEntry("processedRows", 200).containsEntry("nextAllowed", true);
+            assertThat(((Number)continuationState(failure).get("nextChunkRows")).intValue()).isLessThanOrEqualTo(100);
+            assertThat(continuationRows(WorkbookRules.data(storedBook(owner, id), "sheet1"))).hasSize(201);
+            // A new worker represents server/UI resumption using the durable prior run, not local counters.
+            fixture.add(appendContinuationProposal(201, 100, true)); String retryKey = UUID.randomUUID().toString();
+            String retry = (String)resumedWorker.start(owner.principal(), session, id, continuationCommand(owner, id, retryKey, failed, null), retryKey).get("id");
+            var recovered = awaitContinuation(resumedWorker, owner, retry);
+            assertThat(recovered.get("status")).as(recovered.toString()).isEqualTo("READY");
+            String duplicateKey = UUID.randomUUID().toString();
+            assertThat(resumedWorker.start(owner.principal(), session, id, continuationCommand(owner, id, duplicateKey, failed, null), duplicateKey).get("id")).isEqualTo(retry);
+            applyContinuation(resumedWorker, owner, session, id, retry, "operations");
+            String parent = retry;
+            for (int[] chunk : new int[][]{{301, 100}, {401, 50}}) {
+                fixture.add(appendContinuationProposal(chunk[0], chunk[1], chunk[0] + chunk[1] <= 450));
+                String nextKey = UUID.randomUUID().toString();
+                String next = (String)resumedWorker.start(owner.principal(), session, id, continuationCommand(owner, id, nextKey, parent, null), nextKey).get("id");
+                var result = awaitContinuation(resumedWorker, owner, next); assertThat(result.get("status")).as(result.toString()).isEqualTo("READY");
+                applyContinuation(resumedWorker, owner, session, id, next, "operations"); parent = next;
+            }
+            var finalRun = resumedWorker.get(owner.principal(), parent);
+            assertThat(continuationState(finalRun)).containsEntry("processedRows", 450).containsEntry("nextAllowed", false).containsEntry("status", "COMPLETED");
+            var saved = WorkbookRules.data(storedBook(owner, id), "sheet1");
+            assertThat(continuationRows(saved)).hasSize(451); assertThat(continuationRows(saved).get(0)).containsExactly("ORIGINAL");
+            assertThat(((List<String>)saved.get("rowIds")).get(0)).isEqualTo("original-row");
+            assertThat(continuationRows(saved).stream().skip(1).map(r -> r.get(0)).toList()).containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, 450).mapToObj(i -> "NEW_" + i).toList());
+            assertThat(resumedWorker.list(owner.principal(), id).toString()).contains("COMPLETED");
+            assertThatThrownBy(() -> resumedWorker.get(customer().principal(), finalRun.get("id").toString())).isInstanceOf(Problem.class);
+        } finally { worker.close(); resumedWorker.close(); }
+    }
+
+    @Test void continuationPhotoQueueBeyondPerRequestAssetLimitKeepsSourceCursorAndSupportsEmptyEnd() throws Exception {
+        continuationPermissions(); grant("workspace.asset.upload", "workspace.asset.list", "workspace.asset.download");
+        Owner owner = customer(); String id = draft(owner, "EXCEL"); var session = session(owner.principal());
+        var output = new java.io.ByteArrayOutputStream(); javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB), "png", output);
+        var sources = new ArrayList<String>(); for (int i=0;i<4;i++) sources.add((String)assets.store(owner.principal(), owner.business(), "순서"+i+".png", output.toByteArray(), "PROJECT", "EXCEL", id, "PHOTO").get("id"));
+        drafts.edit(owner.principal(), id, new DraftService.Edit("원래 제목", Map.of(), sources, 0));
+        var book = WorkbookRules.normalize(table("KEEP", "keep-row"));
+        var target = new LinkedHashMap<>(WorkbookRules.sheets(book).get(0)); target.put("sourceAssetIds", sources);
+        var linked = new LinkedHashMap<>(book); linked.put("sheets", List.of(target)); sheets.putWorkbook(owner.principal(), id, linked, -1, 1);
+        var fixture = new com.axplatform.ai.ContinuationHttpFixture(); var worker = continuationWorker(fixture);
+        try {
+            String parent = null; int completed = 0;
+            int[][] chunks = {{1,200,1},{201,50,0},{1,10,0},{1,0,0},{1,5,0}};
+            for (int index=0;index<chunks.length;index++) {
+                int[] chunk = chunks[index]; fixture.add(appendContinuationProposal(chunk[0], chunk[1], chunk[2] == 1));
+                String key = UUID.randomUUID().toString();
+                var plan = parent == null ? Map.<String,Object>of("mode", "PHOTO", "chunkRows", 200, "sourceAssetIds", sources) : null;
+                String run = (String)worker.start(owner.principal(), session, id, continuationCommand(owner, id, key, parent, plan), key).get("id");
+                var ready = awaitContinuation(worker, owner, run); assertThat(ready.get("status")).as(ready.toString()).isEqualTo("READY");
+                assertThat(continuationState(ready)).containsEntry("processedRows", completed);
+                applyContinuation(worker, owner, session, id, run, chunk[1] == 0 ? "continuation" : "operations"); completed += chunk[1];
+                var after = continuationState(worker.get(owner.principal(), run)); assertThat(after).containsEntry("processedRows", completed);
+                if(index==0)assertThat(after).containsEntry("sourceIndex", 0).containsEntry("sourceRowStart", 201);
+                if(index==1)assertThat(after).containsEntry("sourceIndex", 1).containsEntry("sourceRowStart", 1);
+                parent = run;
+            }
+            assertThat(continuationState(worker.get(owner.principal(), parent))).containsEntry("status", "COMPLETED").containsEntry("nextAllowed", false);
+            assertThat(fixture.photoCounts).containsOnly(1L);
+            assertThat(continuationRows(WorkbookRules.data(storedBook(owner, id), "sheet1"))).hasSize(266);
+        } finally { worker.close(); }
+    }
+
+
+    @Test @SuppressWarnings("unchecked") void continuationRangeOverCellLimitPreservesUntouchedRowsAndRowIdentity() throws Exception {
+        continuationPermissions(); Owner owner = customer(); String id = draft(owner, "EXCEL"); var session = session(owner.principal());
+        var columns = new ArrayList<Map<String,Object>>(); for (int col=0;col<25;col++) columns.add(Map.of("id", "c"+col, "label", "열"+col, "type", "TEXT", "unit", ""));
+        var sourceRows = new ArrayList<List<String>>(); var rowIds = new ArrayList<String>();
+        for(int row=1;row<=450;row++){var cells=new ArrayList<String>();for(int col=0;col<25;col++)cells.add("OLD_"+row+"_"+col);sourceRows.add(cells);rowIds.add("stable-"+row);}
+        sheets.put(owner.principal(), id, Map.of("columns",columns,"rows",sourceRows,"rowIds",rowIds), -1, 0);
+        var fixture = new com.axplatform.ai.ContinuationHttpFixture(); var worker = continuationWorker(fixture);
+        try {
+            String parent = null; int completed=0;
+            for (int[] chunk : new int[][]{{11,160},{171,160},{331,100}}) {
+                var changedRows=new ArrayList<List<String>>();for(int row=chunk[0];row<chunk[0]+chunk[1];row++){var cells=new ArrayList<String>();for(int col=0;col<25;col++)cells.add("CHECKED_"+row+"_"+col);changedRows.add(cells);}
+                var change=proposal(Map.of("columns",columns,"rows",changedRows,"rowIds",new ArrayList<>(rowIds.subList(chunk[0]-1,chunk[0]-1+chunk[1]))));
+                // Even an early end claim must not mark a requested range complete.
+                change.put("continuation",Map.of("hasMore",false,"nextRow",chunk[0]+chunk[1],"note","범위 확인"));fixture.add(change);
+                String key=UUID.randomUUID().toString();var plan=parent==null?Map.<String,Object>of("mode","RANGE","rowStart",11,"rowCount",420,"chunkRows",200):null;
+                String run=(String)worker.start(owner.principal(),session,id,continuationCommand(owner,id,key,parent,plan),key).get("id");
+                var ready=awaitContinuation(worker,owner,run);assertThat(ready.get("status")).as(ready.toString()).isEqualTo("READY");
+                assertThat(continuationState(ready)).containsEntry("chunkRows",chunk[1]).containsEntry("processedRows",completed);
+                assertThat((Map<String,Object>)fixture.sheetReads.get(fixture.sheetReads.size()-1).get("continuation")).containsEntry("chunkRows",chunk[1]);
+                applyContinuation(worker,owner,session,id,run,"sheet");completed+=chunk[1];
+                assertThat(continuationState(worker.get(owner.principal(),run))).containsEntry("processedRows",completed).containsEntry("nextAllowed",completed<420);parent=run;
+            }
+            var saved=WorkbookRules.data(storedBook(owner,id),"sheet1");assertThat(saved.get("rowIds")).isEqualTo(rowIds);assertThat(continuationRows(saved)).hasSize(450);
+            for(int row=1;row<=450;row++)for(int col=0;col<25;col++)assertThat(continuationRows(saved).get(row-1).get(col)).isEqualTo((row>=11&&row<=430?"CHECKED_":"OLD_")+row+"_"+col);
+            assertThat(continuationState(worker.get(owner.principal(),parent))).containsEntry("status","COMPLETED").containsEntry("processedRows",420);
+        } finally { worker.close(); }
+    }
+
+
+    @Test @SuppressWarnings("unchecked") void continuationClarificationRetainsCursorAndAbandonPreservesAppliedData() throws Exception {
+        continuationPermissions();Owner owner=customer();String id=draft(owner,"EXCEL");var session=session(owner.principal());sheets.put(owner.principal(),id,table("ORIGINAL","original-row"),-1,0);
+        var question=appendContinuationProposal(1,0,true);question.put("ready",false);question.put("questions",List.of(Map.of("id","meaning","field","details","title","어떤 항목을 만들까요?","reason","원본 조건 확인이 필요합니다.","choices",List.of("확인된 내용만"),"recommended","확인된 내용만","required",true)));
+        var fixture=new com.axplatform.ai.ContinuationHttpFixture().add(question);var worker=continuationWorker(fixture);
+        try {
+            String key=UUID.randomUUID().toString();String root=(String)worker.start(owner.principal(),session,id,continuationCommand(owner,id,key,null,Map.of("mode","GENERATE","targetRows",10,"chunkRows",5)),key).get("id");
+            var needed=awaitContinuation(worker,owner,root);assertThat(needed.get("status")).as(needed.toString()).isEqualTo("READY");assertThat(continuationState(needed)).containsEntry("status","NEEDS_INPUT").containsEntry("processedRows",0).containsEntry("nextAllowed",false);
+            fixture.add(appendContinuationProposal(1,5,true));String answerKey=UUID.randomUUID().toString();var answer=json.object(json.write(continuationCommand(owner,id,answerKey,root,null)));answer.put("prompt","확인된 예시 내용만 10행 만들어 주세요.");answer.put("previousRunId",root);
+            var command=tools.jackson.databind.json.JsonMapper.builder().build().readValue(json.write(answer),AiService.Start.class);String answered=(String)worker.start(owner.principal(),session,id,command,answerKey).get("id");var ready=awaitContinuation(worker,owner,answered);
+            assertThat(ready.get("status")).as(ready.toString()).isEqualTo("READY");assertThat(continuationState(ready)).containsEntry("sourceRowStart",1).containsEntry("processedRows",0);applyContinuation(worker,owner,session,id,answered,"operations");
+            fixture.add(appendContinuationProposal(6,5,false));String nextKey=UUID.randomUUID().toString();String pending=(String)worker.start(owner.principal(),session,id,continuationCommand(owner,id,nextKey,answered,null),nextKey).get("id");assertThat(awaitContinuation(worker,owner,pending).get("status")).isEqualTo("READY");
+            assertThatThrownBy(()->worker.cancel(customer().principal(),session,pending,true)).isInstanceOf(Problem.class);
+            var ended=worker.cancel(owner.principal(),session,pending,true);assertThat(ended.get("status")).isEqualTo("CANCELLED");assertThat(continuationState(ended)).containsEntry("status","ABANDONED").containsEntry("nextAllowed",false).containsEntry("processedRows",5);
+            assertThat(continuationRows(WorkbookRules.data(storedBook(owner,id),"sheet1"))).hasSize(6);assertThat(continuationState(worker.get(owner.principal(),answered))).containsEntry("status","ABANDONED");
+            String retryKey=UUID.randomUUID().toString();assertThatThrownBy(()->worker.start(owner.principal(),session,id,continuationCommand(owner,id,retryKey,pending,null),retryKey)).isInstanceOf(Problem.class);
+            assertThatThrownBy(()->applyContinuation(worker,owner,session,id,pending,"operations")).isInstanceOf(Problem.class);
+        } finally {worker.close();}
     }
 
 }

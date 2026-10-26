@@ -1,6 +1,6 @@
-import {initFormControls} from './form-controls.js?v=0.9.1';
-import {initPageLoading} from './loading.js?v=0.9.1';
-import { initTutorial } from './tutorial.js?v=0.9.1';
+import {initFormControls} from './form-controls.js?v=0.10.1';
+import {initPageLoading} from './loading.js?v=0.10.1';
+import { initTutorial } from './tutorial.js?v=0.10.1';
 const paths={home:'M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z',table:'M3 3h18v18H3ZM3 9h18M9 3v18',document:'M6 3h9l4 4v14H6ZM14 3v5h5M9 12h7M9 16h7',slides:'M3 4h18v13H3ZM8 21l4-4 4 4M7 8h5M7 12h9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M20 21v-3a4 4 0 0 0-3-4M17 3a4 4 0 0 1 0 8',calendar:'M3 5h18v16H3ZM7 2v6M17 2v6M3 11h18',grid:'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',shield:'M12 3 3 7v6c0 4 5 7 9 9 4-2 9-5 9-9V7ZM8 12l3 3 5-6',lock:'M5 10h14v11H5ZM8 10V6a4 4 0 0 1 8 0v4',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2'};
 export function decorateIcons(root=document){root.querySelectorAll('[data-icon]:not([data-icon-ready])').forEach(n=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.6');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.classList.add('icon');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',paths[n.dataset.icon]||paths.grid);svg.append(p);n.prepend(svg);n.dataset.iconReady='true';});}
 function boot(){

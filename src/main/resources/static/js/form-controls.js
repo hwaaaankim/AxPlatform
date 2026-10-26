@@ -1,5 +1,5 @@
-import {enhanceFileInput} from './file-picker.js?v=0.9.1';
-import {enhanceDateInput} from './date-picker.js?v=0.9.1';
+import {enhanceFileInput} from './file-picker.js?v=0.10.1';
+import {enhanceDateInput} from './date-picker.js?v=0.10.1';
 let started=false;
 export function initFormControls(){
   if(started)return;started=true;

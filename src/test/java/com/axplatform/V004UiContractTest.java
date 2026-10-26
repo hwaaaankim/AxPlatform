@@ -43,12 +43,12 @@ class V004UiContractTest {
  }
  private void capture(String route,MockHttpSession session,Path dir)throws Exception {
   var req=get(route);if(session!=null)req.session(session);var r=mvc.perform(req).andExpect(status().isOk()).andReturn();String html=r.getResponse().getContentAsString(StandardCharsets.UTF_8);
-  assertThat(html).contains("/css/layout.css?v=0.9.1","/css/workspace.css?v=0.9.1","/css/form-controls.css?v=0.9.1","/js/app-shell.js?v=0.9.1").doesNotContain("th:replace","<script>"," style=");
+  assertThat(html).contains("/css/layout.css?v=0.10.1","/css/workspace.css?v=0.10.1","/css/form-controls.css?v=0.10.1","/js/app-shell.js?v=0.10.1").doesNotContain("th:replace","<script>"," style=");
   assertThat(html.split("class=\"topbar\"",-1).length-1).as("exactly one topbar on %s",route).isEqualTo(1);
   assertThat(html.split("class=\"brand\"",-1).length-1).as("exactly one brand on %s",route).isEqualTo(1);
   assertThat(r.getResponse().getHeader("Content-Security-Policy")).contains("script-src 'self'");
   if(route.startsWith("/work/new"))assertThat(html).contains("data-stage-panel=\"start\"","data-stage-panel=\"basics\"","data-stage-panel=\"review\"","data-stage-panel=\"edit\"","analysis-panel");
-  if(route.equals("/admin/system"))assertThat(html).contains("id=\"ai-connection-check\"","/js/admin-system.js?v=0.9.1");
+  if(route.equals("/admin/system"))assertThat(html).contains("id=\"ai-connection-check\"","/js/admin-system.js?v=0.10.1");
   Files.writeString(dir.resolve(route.replaceAll("[^a-zA-Z0-9_-]","_")+".html"),html);
  }
 }

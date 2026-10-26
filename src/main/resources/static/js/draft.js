@@ -1,28 +1,28 @@
-import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
-import {chooseSource} from './source-chooser.js?v=0.9.1';
-import {fileSize} from './file-picker.js?v=0.9.1';
-import {createWorkflowFlow} from './workflow-flow.js?v=0.9.1';
+import {replaceAsset,locallyMissing,localLabel} from './asset-replace.js?v=0.10.1';
+import {chooseSource} from './source-chooser.js?v=0.10.1';
+import {fileSize} from './file-picker.js?v=0.10.1';
+import {createWorkflowFlow} from './workflow-flow.js?v=0.10.1';
 import {
   request
-} from './request.js?v=0.9.1';
+} from './request.js?v=0.10.1';
 import {
   el,button,message
-} from './ui.js?v=0.9.1';
+} from './ui.js?v=0.10.1';
 import {
   watch
-} from './events.js?v=0.9.1';
+} from './events.js?v=0.10.1';
 import {
   editState
-} from './edit-state.js?v=0.9.1';
+} from './edit-state.js?v=0.10.1';
 import {
   createGuide,fields
-} from './workflow-guide.js?v=0.9.1';
+} from './workflow-guide.js?v=0.10.1';
 import {
   createAiPanel
-} from './guided-ai.js?v=0.9.1';
+} from './guided-ai.js?v=0.10.1';
 import {
   createSheetEditor
-} from './sheet-editor.js?v=0.9.1';
+} from './sheet-editor.js?v=0.10.1';
 const root=document.getElementById('draft-root'),business=Number(root.dataset.businessId),workspace=Number(root.dataset.workspaceId),workflow=root.dataset.workflow,form=document.getElementById('draft-form'),status=document.getElementById('draft-status');
 let id=root.dataset.draftId,record={
   version:0,status:'DRAFT',answers:{
@@ -65,9 +65,9 @@ function fail(error){
   if(error.status===409)remoteNotice();
 }
 function controls(){
-  const archived=record.status==='ARCHIVED',blocked=isBusy();
-  root.querySelectorAll('#draft-form input,#draft-form textarea,#draft-assets input').forEach(x=>x.disabled=blocked||archived||!can('update'));
-  root.querySelectorAll('#questions button,#draft-assets button').forEach(x=>x.disabled=blocked||archived||!can('update'));
+  const archived=record.status==='ARCHIVED',blocked=isBusy(),protectedIds=new Set(ai?.protectedSourceIds?.()||[]);
+  root.querySelectorAll('#draft-form input,#draft-form textarea,#draft-assets input').forEach(x=>x.disabled=blocked||archived||!can('update')||x.closest('#draft-assets')&&protectedIds.has(x.value));
+  root.querySelectorAll('#questions button,#draft-assets button').forEach(x=>x.disabled=blocked||archived||!can('update')||protectedIds.has(x.dataset.sourceAssetId)||x.dataset.clearSources==='true'&&![...root.querySelectorAll('#draft-assets input:checked')].some(cb=>!protectedIds.has(cb.value)));
   document.getElementById('draft-update').disabled=blocked||archived||(!id?!can('create')||!can('update'):!can('update'));
   document.getElementById('draft-save').disabled=blocked||archived||!can('save')||(!id&&(!can('create')||!can('update')));
   document.getElementById('draft-cancel').disabled=blocked||archived||!id||!can('cancel');
@@ -80,42 +80,56 @@ function controls(){
   ai?.refreshControls();
   flow?.refresh();
 }
-async function capabilities(){
-  const value=await request(`/api/workspaces/${workspace}/access`);
+async function capabilities(requestLoading){
+  const value=await request(`/api/workspaces/${workspace}/access`,{loading:requestLoading});
   caps=new Set(value.capabilities);
   controls();
 }
-async function assetOptions(selected=[]){
+async function assetOptions(selected=[],requestLoading=true){
   const host=document.getElementById('draft-assets');
   // Keep the current selection intact until a list response has arrived.
   if(!caps.has('workspace.asset.list')){
     host.replaceChildren(el('p','첨부 자료 조회 권한이 없습니다. 기존 첨부 선택은 유지합니다.','muted'));
     selected.forEach(value=>{const cb=el('input');cb.type='checkbox';cb.value=value;cb.checked=true;cb.hidden=true;host.append(cb);});return;
   }
-  const list=await request('/api/assets/selected',{method:'POST',body:{businessId:business,projectId:id||null,ids:selected}}),seen=new Set(),checks=[];
+  const list=await request('/api/assets/selected',{method:'POST',loading:requestLoading,body:{businessId:business,projectId:id||null,ids:selected}}),seen=new Set(),checks=[];
   host.replaceChildren();const toolbar=el('div','','attachment-toolbar'),counter=el('span','','muted'),chips=el('div','','attachment-chips'),options=el('div','','attachment-options');
   const editable=()=>!isBusy()&&record.status!=='ARCHIVED'&&can('update');
+  const protectedSource=value=>ai?.protectedSourceIds?.().includes(value);
   const all=button('내 자료에서 추가',async()=>{if(!editable())return;chooseSource({business,project:id,workflow,onChoose:async items=>{const ids=[...new Set([...getInput().assetIds,...items.map(a=>a.id)])];if(ids.length>20)throw new Error('작업 자료는 최대 20개입니다. 기존 연결을 해제하고 선택하세요.');await assetOptions(ids);changed();}});},'button small');
-  const clear=button('첨부 전체 해제',()=>{if(!editable())return;checks.forEach(x=>x.cb.checked=false);refresh();changed();},'button small quiet');
+  const clear=button('완료된 첨부 해제',()=>{if(!editable())return;checks.forEach(x=>{if(!protectedSource(x.cb.value))x.cb.checked=false;});refresh();changed();},'button small quiet');
+  clear.dataset.clearSources='true';
   const reload=button('등록 목록 새로고침',()=>assetOptions(getInput().assetIds).then(controls).catch(fail),'button small');
-  function refresh(){const chosen=checks.filter(x=>x.cb.checked);counter.textContent=`이 작업의 자료 ${chosen.length} / 20개`;chips.replaceChildren();for(const {cb,name,asset} of chosen){const chip=el('span','','attachment-chip'),remove=button('×',()=>{if(!editable())return;cb.checked=false;refresh();changed();},'file-remove');remove.setAttribute('aria-label',name+' 업무 첨부 해제');remove.disabled=!editable();chip.append(el('span',name));if(asset&&locallyMissing(asset)){chip.append(el('small',localLabel(asset),'missing-file-badge'));if(caps.has('workspace.asset.upload')&&caps.has('workspace.asset.archive')){const replace=button('파일 교체',()=>replaceAsset(asset,{onReplaced:async()=>{await assetOptions(getInput().assetIds);await ai?.refreshAssets();controls();}}),'button small');replace.disabled=!editable();chip.append(replace);}}chip.append(remove);chips.append(chip);}all.disabled=!editable();clear.disabled=!editable()||!chosen.length;}
-  function item(id,name,archived=false,bytes=null,asset=null){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=id;cb.checked=selected.includes(id);cb.addEventListener('change',()=>{if(checks.filter(x=>x.cb.checked).length>20){cb.checked=false;message(status,'업무 첨부는 최대 20개입니다. 기존 첨부를 해제하고 선택하세요.',true);}else changed();refresh();});label.append(cb,el('span',name+(bytes!==null?' · '+fileSize(Number(bytes)):'')+(archived?' · 삭제됨 · 복원하거나 첨부를 해제하세요.':'')));checks.push({cb,name,archived,asset});label.hidden=true;options.append(label);}
+  function refresh(){const chosen=checks.filter(x=>x.cb.checked);counter.textContent=`이 작업의 자료 ${chosen.length} / 20개`;chips.replaceChildren();for(const {cb,name,asset} of chosen){const chip=el('span','','attachment-chip'),remove=button('×',()=>{if(!editable()||protectedSource(cb.value))return;cb.checked=false;refresh();changed();},'file-remove');remove.dataset.sourceAssetId=cb.value;remove.setAttribute('aria-label',name+' 업무 첨부 해제');remove.disabled=!editable()||protectedSource(cb.value);if(protectedSource(cb.value))remove.title='연속 작업에서 사용 중입니다. 작업 완료 또는 이어 처리 종료 후 연결을 해제하세요.';chip.append(el('span',name));if(asset&&locallyMissing(asset)){chip.append(el('small',localLabel(asset),'missing-file-badge'));if(caps.has('workspace.asset.upload')&&caps.has('workspace.asset.archive')){const replace=button('파일 교체',()=>replaceAsset(asset,{onReplaced:async()=>{await assetOptions(getInput().assetIds);await ai?.refreshAssets();controls();}}),'button small');replace.disabled=!editable();chip.append(replace);}}chip.append(remove);chips.append(chip);}all.disabled=!editable();clear.disabled=!editable()||!chosen.some(x=>!protectedSource(x.cb.value));}
+  function item(id,name,archived=false,bytes=null,asset=null){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=id;cb.checked=selected.includes(id);cb.addEventListener('change',()=>{if(!cb.checked&&protectedSource(cb.value)){cb.checked=true;message(status,'연속 작업에서 사용하는 원본입니다. 작업 완료 또는 이어 처리 종료 후 연결을 해제하세요.',true);}else if(checks.filter(x=>x.cb.checked).length>20){cb.checked=false;message(status,'업무 첨부는 최대 20개입니다. 기존 첨부를 해제하고 선택하세요.',true);}else changed();refresh();});label.append(cb,el('span',name+(bytes!==null?' · '+fileSize(Number(bytes)):'')+(archived?' · 삭제됨 · 복원하거나 첨부를 해제하세요.':'')));checks.push({cb,name,archived,asset});label.hidden=true;options.append(label);}
   for(const a of list){if(a.archived_at&&!selected.includes(a.id))continue;seen.add(a.id);item(a.id,a.original_name,!!a.archived_at,a.byte_size,a);}
   for(const value of selected.filter(x=>!seen.has(x)))item(value,'조회되지 않는 기존 첨부 · 목록에서 확인하세요.');
-  toolbar.append(counter,all,clear,reload);host.append(toolbar,chips,options,el('small','×와 전체 해제는 이 업무의 첨부 선택만 바꿉니다. 저장 시 반영되며, 원본 파일 삭제·복원은 내 자료에서 처리합니다.','muted'));
+  toolbar.append(counter,all,clear,reload);host.append(toolbar,chips,options,el('small','×와 완료된 첨부 해제는 이 업무의 첨부 선택만 바꿉니다. 이어 처리 중인 원본은 작업을 완료하거나 종료하면 해제할 수 있습니다. 저장 시 반영되며, 원본 파일 삭제·복원은 내 자료에서 처리합니다.','muted'));
   if(!checks.length)options.append(el('p','등록된 자료가 없습니다. 위에서 자료를 등록한 뒤 첨부하세요.','muted'));refresh();
 }
-async function fill(input){
+function openAttachmentManager(){
+  if(isBusy()||!can('update'))return message(status,'처리 중인 요청이 끝난 뒤 원본 연결을 관리하세요.',true);
+  const protectedIds=new Set(ai?.protectedSourceIds?.()||[]),current=[...document.querySelectorAll('#draft-assets input:checked')];
+  const dialog=el('dialog','','workbook-dialog'),form=el('form'),info=el('p','','help-line'),list=el('div','','attachment-options'),checks=[];
+  dialog.style.maxWidth='min(720px, calc(100vw - 32px))';dialog.style.maxHeight='85vh';dialog.style.overflow='auto';dialog.setAttribute('aria-label','작업 원본 연결 관리');
+  dialog.append(el('h2','작업 원본 연결 관리'),el('p','체크한 원본을 이 작업의 현재 첨부로 유지합니다. 연결을 해제해도 이미 만든 표와 보관 원본 파일은 삭제되지 않습니다. 다음 사진을 등록할 자리가 필요하면 처리가 끝난 원본의 연결을 해제하세요.','muted'));
+  for(const original of current){const label=el('label','','check'),cb=el('input');cb.type='checkbox';cb.value=original.value;cb.checked=true;cb.disabled=protectedIds.has(cb.value);const name=original.closest('label')?.querySelector('span')?.textContent||original.value;label.append(cb,el('span',name+(cb.disabled?' · 연속 작업에서 사용 중':'')));checks.push(cb);list.append(label);}
+  if(!current.length)list.append(el('p','현재 연결된 원본이 없습니다. 자료 준비에서 다음 사진을 등록하세요.','muted'));
+  const clear=button('연속 작업에서 사용하지 않는 원본 해제',()=>checks.filter(cb=>!cb.disabled).forEach(cb=>cb.checked=false),'button quiet'),close=button('닫기',()=>dialog.close(),'button'),submit=el('button','연결 상태 저장','button primary');submit.type='submit';submit.disabled=!current.length;const actions=el('div','','actions');actions.append(clear,close,submit);form.append(list,info,actions);dialog.append(form);
+  form.addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;close.disabled=true;clear.disabled=true;checks.forEach(cb=>cb.disabled=true);try{await mutate(async()=>{await assetOptions(checks.filter(cb=>cb.checked).map(cb=>cb.value));changed();await ensureDraft();await ai?.refreshAssets();});dialog.close();message(status,'원본 연결을 저장했습니다. 표 데이터와 보관 파일은 유지됩니다. 남은 사진을 등록할 수 있습니다.');}catch(error){message(info,error.message,true);submit.disabled=false;close.disabled=false;clear.disabled=false;checks.forEach(cb=>cb.disabled=protectedIds.has(cb.value));}});
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
+}
+async function fill(input,requestLoading=true){
   document.getElementById('draft-title').value=input.title||'';
   for(const[key]of fields)document.getElementById('answer-'+key).value=input.answers?.[key]||'';
-  await assetOptions(input.assetIds||[]);
+  await assetOptions(input.assetIds||[],requestLoading);
   summary();
   guide.resume();
   if(mode==='direct')guide.setMode('direct');
   controls();
 }
 async function reload({
-  forceSheet=false
+  forceSheet=false,background=false
 }
 ={
 }){
@@ -123,20 +137,20 @@ async function reload({
   loading=true;
   controls();
   try{
-    await capabilities();
+    await capabilities(!background);
     if(id){
-      record=await request('/api/drafts/'+encodeURIComponent(id));
-      await fill(record);
+      record=await request('/api/drafts/'+encodeURIComponent(id),{loading:!background});
+      await fill(record,!background);
     }
     else await fill({
-      title:label+' 업무',answers:{
+      title:'',answers:{
       },assetIds:[]
     });
     dirty=false;
     remote=false;
     document.getElementById('remote-notice').hidden=true;
     if(sheet)await sheet.load({
-      force:forceSheet
+      force:forceSheet,loading:!background
     });
   }
   finally{
@@ -216,7 +230,7 @@ async function prepareAi(assetIds=[]){
     draftVersion:record.version,sheetVersion:sheet?sheet.version():-1
   };
 }
-async function afterAiApply(){
+async function afterAiApply({keepAi=false}={}){
   if(hasChanges()){
     remoteNotice();
     message(status,'AI 적용은 완료되었지만 새로 입력한 수동 내용이 있어 화면에 덮어쓰지 않았습니다. 현재 입력을 먼저 확인하세요.');
@@ -227,7 +241,7 @@ async function afterAiApply(){
   });
   cache?.clear();
   message(status,'선택한 AI 제안만 서버에 적용했습니다. 실제 내용을 확인하세요.');
-  flow?.afterAi();
+  flow?.afterAi({keepAi});
 }
 function configureModules(){
   const common={
@@ -236,7 +250,7 @@ function configureModules(){
   if(workflow==='EXCEL'){
     document.getElementById('sheet-section').hidden=false;
     sheet=createSheetEditor(document.getElementById('sheet-editor'),{
-      ...common,ensureDraft,onSaved:readVersionAfterWrite,onAddSheet:mode=>mode==='guided'?flow?.showAi():flow?.select(mode),onSheetChange:()=>ai?.refreshSheetTargets(),onLocalChange:()=>{
+      ...common,ensureDraft,onSaved:readVersionAfterWrite,onAddSheet:mode=>mode==='guided'?flow?.showAi():flow?.select(mode),onSheetChange:()=>{ai?.refreshSheetTargets();flow?.refresh();},onLocalChange:()=>{
         ai?.notifyVersion();
       }
     });
@@ -339,7 +353,7 @@ document.getElementById('draft-refresh').addEventListener('click',async()=>{
 });
 async function onPolicy(){
   try{
-    await capabilities();
+    await capabilities(false);
     if(!can('read')&&id){
       remoteNotice();
       message(status,'업무 읽기 권한이 변경되었습니다. 현재 입력을 유지하고 다음 요청은 서버에서 권한을 다시 확인합니다.',true);
@@ -358,8 +372,8 @@ request('/api/me').then(async me=>{
   configureModules();
   await reload();
   flow=createWorkflowFlow(root,{
-    id:()=>id,ensureDraft:async()=>{if(!id&&!document.getElementById('draft-title').value.trim())document.getElementById('draft-title').value=workflow==='EXCEL'?'새 엑셀 작업':'새 업무 작업';await ensureDraft();return id;},sheet:()=>sheet,assetIds:()=>getInput().assetIds,photoTargets:ids=>ai?.preparePhotoSheets(ids).catch(error=>message(status,error.message,true)),caps:()=>caps,dirty:hasChanges,active:()=>record.status!=='ARCHIVED'&&!isBusy(),setBusy:externalBusy,
-    resumeGuide:()=>guide.resume(),setMode:value=>{mode=value;guide.setMode(value==='upload'?'direct':value);},
+    id:()=>id,ensureDraft:async()=>{if(!id&&!document.getElementById('draft-title').value.trim())document.getElementById('draft-title').value=workflow==='EXCEL'?'새 엑셀 작업':'새 업무 작업';await ensureDraft();return id;},sheet:()=>sheet,assetIds:()=>getInput().assetIds,photoTargets:(ids,options)=>ai?.preparePhotoSheets(ids,options).catch(error=>message(status,error.message,true)),caps:()=>caps,dirty:hasChanges,active:()=>record.status!=='ARCHIVED'&&!isBusy(),setBusy:externalBusy,
+    manageAssets:openAttachmentManager,resumeGuide:()=>guide.resume(),setAiRequest:text=>ai?.setRequest(text,sheet?.activeSheetId()),setMode:value=>{mode=value;guide.setMode(value);ai?.setMode?.(value);},
     async refreshAssets(assetIds){const selected=getInput().assetIds;for(const assetId of Array.isArray(assetIds)?assetIds:[assetIds])if(assetId&&!selected.includes(assetId)&&selected.length<20)selected.push(assetId);await assetOptions(selected);changed();await ai.refreshAssets();if(selected.length===20)message(status,'업무 첨부 한도 20개입니다. 추가 등록 원본은 내 자료에 보관되며 필요할 때 바꿔 선택하세요.');},
     async refreshSheet(){await readVersionAfterWrite();await sheet.load({force:true});ai?.refreshSheetTargets();},askAi:(text,sheetId)=>{sheet?.selectSheet(sheetId);flow?.showAi();ai?.setRequest(text,sheetId);},
     async saveAll(){if(workflow==='EXCEL'&&!sheet?.hasColumns())throw new Error('먼저 열을 한 개 이상 추가해 주세요. 데이터가 없는 빈 양식도 저장할 수 있습니다.');if(sheet?.dirty())await sheet.save();await mutate(async()=>{await ensureDraft();record=await request(`/api/drafts/${encodeURIComponent(id)}/save`,{method:'POST',body:{version:record.version}});dirty=false;cache?.clear();controls();});}
@@ -374,7 +388,7 @@ request('/api/me').then(async me=>{
     else if(confirm('이 탭의 저장 전 업무 입력을 복구할까요?')){
       await fill(stored.input);
       dirty=true;
-      message(status,'저장 전 입력을 복구했습니다. 서버 저장은 아직입니다.');
+      flow.go('basics',{focus:true});message(status,'저장 전 입력을 복구했습니다. 서버 저장은 아직입니다.');
     }
     else cache.clear();
   }
@@ -382,11 +396,11 @@ request('/api/me').then(async me=>{
   if(caps.has('workspace.events.read'))stopEvents=watch(business,{
     onStatus:text=>document.getElementById('event-status').textContent=text,onPolicy,onResync:()=>{
       if(hasChanges()||isBusy()||ai?.isPending())remoteNotice();
-      else if(id)reload().catch(fail);
+      else if(id)reload({background:true}).catch(fail);
     },onChange:event=>{
       if(String(event.object_id)===id&&Number(event.object_version)>record.version){
         if(hasChanges()||isBusy()||ai?.isPending())remoteNotice();
-        else reload().catch(fail);
+        else reload({background:true}).catch(fail);
       }
       else if(event.event_type==='tier.changed'||event.event_type.startsWith('scope.'))onPolicy();
     }

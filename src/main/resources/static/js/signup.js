@@ -1,11 +1,11 @@
 import {
   request
 }
-from './request.js?v=0.9.1';
+from './request.js?v=0.10.1';
 import {
   el,message,busy
 }
-from './ui.js?v=0.9.1';
+from './ui.js?v=0.10.1';
 const root=document.getElementById('signup-root'),form=document.getElementById('signup-form'),status=document.getElementById('auth-status');
 const social=root.dataset.social==='true',trusted=root.dataset.trustedEmail==='true',initialEmail=document.getElementById('email').value.trim().toLowerCase();
 let step=0;

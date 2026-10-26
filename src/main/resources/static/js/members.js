@@ -1,7 +1,7 @@
 import {
   request
 }
-from './request.js?v=0.9.1';
+from './request.js?v=0.10.1';
 const form = document.getElementById('member-search');
 const message = document.getElementById('request-status');
 let controller;

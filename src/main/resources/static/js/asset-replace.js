@@ -1,6 +1,6 @@
-import {request} from './request.js?v=0.9.1';
-import {el,button,message} from './ui.js?v=0.9.1';
-import {enhanceFileInput,fileSize} from './file-picker.js?v=0.9.1';
+import {request} from './request.js?v=0.10.1';
+import {el,button,message} from './ui.js?v=0.10.1';
+import {enhanceFileInput,fileSize} from './file-picker.js?v=0.10.1';
 
 export const locallyMissing = row => row.file_exists === false;
 export function localLabel(row){

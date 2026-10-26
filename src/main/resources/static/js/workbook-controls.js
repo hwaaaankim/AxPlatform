@@ -1,5 +1,5 @@
-import {withLoading} from './loading.js?v=0.9.1';
-import {el,button,message} from './ui.js?v=0.9.1';
+import {withLoading} from './loading.js?v=0.10.1';
+import {el,button,message} from './ui.js?v=0.10.1';
 export const emptyTable=()=>({columns:[],rows:[],rowIds:[]});
 export function asWorkbook(value){return value?.sheets?structuredClone(value):{format:'AX_WORKBOOK_1',activeSheetId:'sheet1',sheets:[{id:'sheet1',name:'시트1',data:structuredClone(value||emptyTable()),sourceAssetIds:[]}]};}
 export function sheetName(value){const name=String(value??'').trim();if(!name||name.length>31||/[\\/?*:\[\]\x00-\x1f]/.test(name)||name.startsWith("'")||name.endsWith("'"))throw Error('시트 이름은 1~31자입니다. \\ / ? * : [ ] 및 앞뒤 작은따옴표는 사용할 수 없습니다.');return name;}

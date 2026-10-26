@@ -1,0 +1,84 @@
+AxPlatform v0.9.1 원본 → v0.10.1 누적 개선 코드
+포함: v0.10.0 + v0.10.1의 변경/추가 코드
+기준: 처음 업로드하신 AxPlatform(1).zip
+전체 프로젝트가 아닙니다. 변경되지 않은 파일은 제외했습니다.
+
+SHA-256  상태  파일 경로
+4b17b98e675874f9a8d4cbbf7278c8c775fefb9777cdcf2ac2524e6caca07066  수정  pom.xml
+e61b229878f92e5399c24c2b923bd0cf14130515716098fe2e7de814b8de20fc  추가  src/main/java/com/axplatform/ai/AiContinuation.java
+8f0ef81bc4bed45ad1d2d8b7ddef3aed8e802f7f27ddeb4d85a32d8fbf5362fa  수정  src/main/java/com/axplatform/ai/AiProviderErrors.java
+80b9722f374d1ee73c9bc75dfbc25633dcc290368e0467396974ad0b4cbdd146  수정  src/main/java/com/axplatform/ai/AiService.java
+a2ab7646b3cf828aefd8901635ce09ad8052cf623e42b3a6caefce947b6c4216  수정  src/main/java/com/axplatform/ai/AiTools.java
+668c284403f5ea18d2010beb99f8bb3f29d9f3bc01fac2a14dd0baf613574f44  수정  src/main/java/com/axplatform/ai/OpenAiResponses.java
+475834578348465e74ffef427a84bdff0e2c54d2f58a25728785caa49c1a149e  수정  src/main/java/com/axplatform/ai/ProposalRules.java
+89f5877a83a72be3dc9e707cefb948ae250eea0b07735cd161f5acf1d923e7fa  추가  src/main/java/com/axplatform/sheet/AiSheetOperations.java
+be59f0c4835942e9a95436e23d0d4c81302736ec0518e066493e10efb03e9c97  수정  src/main/java/com/axplatform/sheet/DataReport.java
+1705c6ec38fff964ca09edc0940ae981b98eee13cb07231a15c5c55c9f104313  추가  src/main/java/com/axplatform/sheet/WorkbookMaintenance.java
+ae068ee2c405c95da13fc21ceeb27ba1720fbb15a541a61d19b452f95d99c9de  수정  src/main/java/com/axplatform/web/AiApiController.java
+9232044fc5ad20ab2977acf6c05076b5dce4e768b452d6be3fdbfb190626b8ba  추가  src/main/java/com/axplatform/web/SheetMaintenanceController.java
+7c7441723112a68fc500c44eb77a0a00ed6e6910835d80c9772721dd515e4113  추가  src/main/resources/static/css/ai-continuation.css
+85d953f52f8df0e1fcf4cc589a5614e44ae5098e4c66f42f670f06dfd34e55bf  추가  src/main/resources/static/css/ai-conversation.css
+681c9b6a1d3806aafba7ea7ccc7bbad68046efbfb4b0a0daca93e997136ed8cb  추가  src/main/resources/static/css/data-quality.css
+cc8e42e202148d323fb68fecb7d1fae9fba98fdfdc2ed2c0da6673495c8e4c17  추가  src/main/resources/static/css/data-view-settings.css
+48d1d8a2ad3a16ad344187b88b17bf3e08ea3da873ac11df0afebb07e6c212b7  추가  src/main/resources/static/css/workflow-intake.css
+f47a1a9a65222f5e7e52c62fba219695709680a20b6a65bef1d5bafcdcc37016  수정  src/main/resources/static/js/admin-system.js
+127a6bc510111d9c2538d028c2650455a92104cd762ada2d27747103b0415619  추가  src/main/resources/static/js/ai-continuation.js
+e07fcffb21f8fcd2598b0d786e4c6a8acf3cdc022171bf3e1b9334fdf7adba84  수정  src/main/resources/static/js/ai-diagnostic.js
+78475bebaf490fbf8bd0a217b24ea3cf7a8da32afb5392e671d4575cba8fbe78  추가  src/main/resources/static/js/ai-edit-presentation.js
+012e7b8a23192672df7ce219ffadf71effc838fe840e892ac3ceb041d5457bc9  수정  src/main/resources/static/js/app-shell.js
+f950388c159ab64356d1e535da8d6c14f88d2bd168a9a22f83c2d672310f61bc  수정  src/main/resources/static/js/asset-library.js
+cf170e7dd86a410f5e376f3987ee4f552517ce07ed41001c8e90b40e5b5d9dc7  수정  src/main/resources/static/js/asset-replace.js
+134b700dec43fd4e990670b5be7ae729aaf18b749595026c8ebdd572489a15d0  추가  src/main/resources/static/js/continuation-capacity.js
+fbaf773c402b4a37f1361e6b555d091e09e945753f219c05649147eff70eaa29  수정  src/main/resources/static/js/dashboard.js
+29414cfb5901fdbad23ccd9d8f6a4e5a2a41daf20c6edbb536aca245ef633bcd  수정  src/main/resources/static/js/data-center-tools.js
+a0640be751a521fc7813c16ca119f89e9556057fcab2d51f0171a8a342f373cb  추가  src/main/resources/static/js/data-quality.js
+f927e3970499b188c927564d3da89c65ef57f1f35169e7d68d87fb3b09ac9dde  수정  src/main/resources/static/js/date-picker.js
+f502d4ab3eb9341cf7a8617f8fa7baae8a10d6cade0b067ecc63842e97bb5fee  수정  src/main/resources/static/js/draft.js
+c7865bf96d9d786768ad2c562c20ecbd3a60a0327a3aef265e74c2de0823a12e  수정  src/main/resources/static/js/file-picker.js
+6b0d9215b49a40074d13c72d4c8b7bcdd588ea165b3b18464169aaf195d17e12  수정  src/main/resources/static/js/files.js
+9143ad3ce93db32faec26c17864b63f7479b09a6bece64c8afa596bbaba7ca38  수정  src/main/resources/static/js/form-controls.js
+d47013629d0b51c4e8c902325aeeb575834f55d844fee715373f9e961e15c043  수정  src/main/resources/static/js/formula-review.js
+0d39d5e5c873d0a0a741a21f576a0c51b0a522a79bd00a1ac821aa72fd4bed21  수정  src/main/resources/static/js/guided-ai.js
+6213eaeefa64804adba341e2ec4cd8da52bee276f94d0fbe7f4d00fcfb07d7c1  수정  src/main/resources/static/js/member-detail.js
+04fcff420860699541ea4dd9768b146473d93c40aa152064a43c5dab01269bdc  수정  src/main/resources/static/js/members.js
+00a41f84abf530a903b2cff80c7c4f4b9426fa8754b9f278271b24a1b7f0f011  수정  src/main/resources/static/js/operations.js
+ad89b8850d7ebe9aa3244c7d700c23287762592bd89c656f8ac27100809a90f1  수정  src/main/resources/static/js/permissions.js
+2c3dcb3f11c3dd91be6e39ba4d53731a9ad378f9eb776512ca43fb9efc4e7070  수정  src/main/resources/static/js/recovery.js
+11f18e7f5997c0b9d6e9081c8d704a54e275c5b37016d25b31f3182c3cf1b6c5  수정  src/main/resources/static/js/request.js
+eba66d98815eaf1faaee8bf35e92e50e810c9de76c36873e402100506690486a  수정  src/main/resources/static/js/sheet-analysis.js
+f6d0057b8312fa601d2df920b3b0e6505fd30d32072c63d2698fd917afef9d2e  수정  src/main/resources/static/js/sheet-editor.js
+b5195113ffcf3a54784ffa9b6fa9cac597f2c73e4d51964050aa87a81b9976d1  수정  src/main/resources/static/js/signup.js
+4089aa64cc0b1847881ab38083bd9b24ec33fe4ca5a240dca77437086c953134  수정  src/main/resources/static/js/source-chooser.js
+4e9ebbed67c3763905e0b35d416da39d706b01cd576eb3436f73d94eef3aae38  수정  src/main/resources/static/js/step-progress.js
+31b5cf85b7454c5159cd89515447dc6ad1a202efe4784c15e879128ff1f77e4c  수정  src/main/resources/static/js/table-view.js
+033f9909239d4e219846a0981c5f0f7fcd02fd17a8186cfb912ea4bcc2eed428  수정  src/main/resources/static/js/tutorial.js
+265a33da182db793f9e132ac5c4aa7a0bea42aab0da45bad97132ab858c5f92d  수정  src/main/resources/static/js/upload-source.js
+df9b7e788fd3ddf75fd206b0ed6c36820dfa2709f610b57241ede7a4685d23dc  추가  src/main/resources/static/js/view-setup.js
+d79cc98ae7533ee294a4fb0ea02f9cb24dd61a5a882305be08176e5bba611c8a  수정  src/main/resources/static/js/workbook-controls.js
+3d2fb2df35fea05655e0f2c4a793144d640476daec80fc3a68b9f3ac3026b80c  수정  src/main/resources/static/js/workbook-import.js
+63c86a29faafb9cee2b98e88d67e67bed3a015d4b2fd0b8316d12f7953d0889d  수정  src/main/resources/static/js/workflow-flow.js
+19e35d0be28dadc162fce66644b6c420be062f792aeaf502a87b3064e30fb8a4  수정  src/main/resources/static/js/workflow-guide.js
+54fe2c2f64f29c5824eabb2ee216c36af9be94e3280a75edbc1b02a5859ded9c  수정  src/main/resources/templates/admin/member-detail.html
+db98be0ac033b4bd6b8996c8cf05067114d9e83d1886fb9b7dbb82dce4fec8c3  수정  src/main/resources/templates/admin/members.html
+c28f6d55beac5735c57c6cebf5a15a6d88e4656e38f10acfb4e58e10a61e9939  수정  src/main/resources/templates/admin/operations.html
+fc20c80582a2fb135a3d9b6ee03afcca434e96c3425fe66a147d0a51608d05a4  수정  src/main/resources/templates/admin/permissions.html
+0a42f92233232a71007fc9e94d6f07eb4144fdd29f888d90d6b2ebd5086c779a  수정  src/main/resources/templates/admin/system.html
+9fff15242db357ab8769ae9ee1b951c971e9a12c09768419cbb925cc24c2cf83  수정  src/main/resources/templates/auth/recovery.html
+9713a1686d978b3b82142ecfde0984054061c95baa9453a100b282b10156ffe1  수정  src/main/resources/templates/auth/reset.html
+1429def8ed48b7438a566058e6a7aaa3ff1c18bf7034401a74793fc2716cd8b4  수정  src/main/resources/templates/auth/signup.html
+9b112cc632d3856135d9795383700aea564e8e71dca23f729397502b262352f5  수정  src/main/resources/templates/fragments/layout.html
+e3162956e82aa30230109dc38faf9ea8e5d10d5641177d79cdb43c416b1747e6  수정  src/main/resources/templates/workspace/dashboard.html
+0a441a42a200f3db4e48ba00b9797747a286a97885f9cca583a99949309254f5  수정  src/main/resources/templates/workspace/draft.html
+4c2f4e7eded30bbb0044bd7c09eaa74c4aece3d63ef06b006c8092ef33a48472  수정  src/main/resources/templates/workspace/files.html
+934a151ed590bae8107786ec314f20a1692ee4d4313e5b6f686192e86f3adbc2  수정  src/test/java/com/axplatform/P3SheetIntegrationTest.java
+da275ecf213cdf3c152ad3f9e97155f0df66b3186bd6c34f009bf423204d694e  수정  src/test/java/com/axplatform/V004UiContractTest.java
+af68139320d1610d7325a672282527b5203b321897ff7045ba63f7b292d56e0c  추가  src/test/java/com/axplatform/WorkbookMaintenanceAccessTest.java
+83f5b84589c2792642a9f9080d6b82337e32dd8a3803d6d900073bdd21761c85  추가  src/test/java/com/axplatform/ai/AiContinuationTest.java
+a6552823c2b2b7089ea5c35fd54b6684402a357da903ee1871b0d6f1803f652f  추가  src/test/java/com/axplatform/ai/AiResponseLimitsTest.java
+7d482b46afc8a6276d878aa2362a7d5fca65e7b9fa5cf1154da8d3687eb945e5  추가  src/test/java/com/axplatform/ai/ContinuationHttpFixture.java
+94242ebdbba8b73e37452551299ea96ea74d7fc17c4449f145457e8e9c07efb8  추가  src/test/java/com/axplatform/sheet/AiSheetOperationsTest.java
+b6365a3d256fdb58c7cb81bd5ebbd801661d275da74e6f59533c234dabb7a2e3  수정  src/test/java/com/axplatform/sheet/DataReportTest.java
+5937f2fd365fb900d5a5f742a3b9d9b50889d163eb7b31c6ba426d3505bd882a  추가  src/test/java/com/axplatform/sheet/WorkbookMaintenanceTest.java
+
+코드 75개(수정55/추가20) + 적용 안내1개 + 이 목록1개 = 총77개
+삭제할 기존 파일과 추가 SQL은 없습니다.

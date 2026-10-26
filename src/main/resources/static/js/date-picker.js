@@ -1,4 +1,4 @@
-import {el,button} from './ui.js?v=0.9.1';
+import {el,button} from './ui.js?v=0.10.1';
 const instances=new WeakMap();
 const pad=n=>String(n).padStart(2,'0');
 function dayValue(year,month,day){return String(year).padStart(4,'0')+'-'+pad(month)+'-'+pad(day);}

@@ -1,9 +1,9 @@
-import {replaceAsset,assetPreview,locallyMissing,localLabel} from './asset-replace.js?v=0.9.1';
-import {uploadSource} from './upload-source.js?v=0.9.1';
-import {request} from './request.js?v=0.9.1';
-import {el,button,message,whenText} from './ui.js?v=0.9.1';
-import {enhanceFileInput,fileSize} from './file-picker.js?v=0.9.1';
-import {scopeLabel} from './source-chooser.js?v=0.9.1';
+import {replaceAsset,assetPreview,locallyMissing,localLabel} from './asset-replace.js?v=0.10.1';
+import {uploadSource} from './upload-source.js?v=0.10.1';
+import {request} from './request.js?v=0.10.1';
+import {el,button,message,whenText} from './ui.js?v=0.10.1';
+import {enhanceFileInput,fileSize} from './file-picker.js?v=0.10.1';
+import {scopeLabel} from './source-chooser.js?v=0.10.1';
 const $=id=>document.getElementById(id),admin=$('files-root').dataset.manager==='true',prefix=admin?'/api/admin/files':'/api/my/files',status=$('files-status');let account=null,rows=[],selected=new Set(),page=1,state='ACTIVE',loading=false,policy=null,sequence=0,spaces=[],scopes=[],projects=[];
 function options(select,list,first){select.replaceChildren();if(first!==undefined){const o=el('option',first);o.value='';select.append(o);}for(const x of list){const o=el('option',x.name||x.title||x.label);o.value=x.id||x.code;select.append(o);}}
 function query(){const q=new URLSearchParams({page,state,q:$('files-q').value});for(const [key,id]of [['businessId','files-business'],['workflow','files-workflow'],['scope','files-scope'],['projectId','files-project']])if($(id).value)q.set(key,$(id).value);if(admin&&account)q.set('accountId',account);return q;}

@@ -1,4 +1,4 @@
-import {el,button,message} from './ui.js?v=0.9.1';
+import {el,button,message} from './ui.js?v=0.10.1';
 export function formulaProblems(book){return (book?.sheets||[]).flatMap(s=>[
  ...Object.entries(s.data.excel?.issues||{}).map(([address,issue])=>({sheetId:s.id,sheetName:s.name,address,...issue,paused:false})),
  ...Object.entries(s.data.excel?.paused||{}).map(([address,issue])=>({sheetId:s.id,sheetName:s.name,address,...issue,paused:true}))]);}

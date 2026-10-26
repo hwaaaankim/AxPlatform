@@ -1,6 +1,6 @@
-import {request} from './request.js?v=0.9.1';
-import {el,message} from './ui.js?v=0.9.1';
-import {diagnosticDetails} from './ai-diagnostic.js?v=0.9.1';
+import {request} from './request.js?v=0.10.1';
+import {el,message} from './ui.js?v=0.10.1';
+import {diagnosticDetails} from './ai-diagnostic.js?v=0.10.1';
 const check=document.getElementById('ai-connection-check'),status=document.getElementById('ai-connection-status'),result=document.getElementById('ai-connection-result');
 let timer;
 check.addEventListener('click',async()=>{

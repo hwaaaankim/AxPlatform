@@ -74,12 +74,16 @@ final class AiProviderErrors {
         } else if (status == 429) {
             code = "AI_PROVIDER_LIMIT";
             message = "OpenAI 사용량 또는 요청 한도로 중단했습니다. 관리자 확인 후 다시 요청해 주세요. 자동 재시도하지 않았습니다.";
+        } else if (Set.of("context_length_exceeded", "max_context_length_exceeded", "input_too_long").contains(providerCode)
+                || status == 413) {
+            code = "AI_CONTEXT_LIMIT";
+            message = "현재 요청이 제공자의 입력 크기 한도를 넘었습니다. 한 번에 보낼 행·셀·사진 수를 줄여 같은 구간부터 다시 요청해 주세요. 자동 재시도하지 않았습니다.";
         } else if (Set.of("invalid_image", "invalid_image_format", "invalid_image_url", "image_parse_error", "invalid_base64_image", "unsupported_image").contains(providerCode)) {
             code = "AI_IMAGE_REJECTED";
             message = "OpenAI가 사진 형식을 읽지 못했습니다. 원본을 사진 앱에서 PNG/JPG로 다시 저장하고 표 부분을 잘라 올려 주세요. 해당 사진의 시트를 다시 선택해 요청할 수 있습니다.";
         } else if (Set.of("image_too_large", "image_too_small").contains(providerCode)) {
             code = "AI_IMAGE_DIMENSIONS";
-            message = providerCode.equals("image_too_large") ? "사진이 제공자의 이미지 크기 한도를 넘었습니다. 표를 나누어 자르거나 해상도를 줄여 다시 올려 주세요." : "사진이 너무 작아 제공자가 읽지 못했습니다. 글자가 선명하게 보이도록 더 높은 해상도로 촬영해 주세요.";
+            message = providerCode.equals("image_too_large") ? "사진 한 장이 제공자의 이미지 크기 한도를 넘었습니다. 같은 사진을 반복 요청하지 말고 표 부분을 여러 장으로 잘라 다시 올린 뒤 남은 구간을 이어서 처리해 주세요." : "사진이 너무 작아 제공자가 읽지 못했습니다. 글자가 선명하게 보이도록 더 높은 해상도로 촬영해 주세요.";
         } else if (status == 400 || status == 422) {
             code = "AI_PROVIDER_REQUEST";
             message = "OpenAI가 요청 설정 또는 입력 형식을 거부했습니다. 관리자에게 오류 확인 정보를 전달해 주세요.";
